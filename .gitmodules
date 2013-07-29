@@ -1,0 +1,18 @@
+[submodule "plugins/redmine_project_specific_email_sender"]
+	path = plugins/redmine_project_specific_email_sender
+	url = https://github.com/Warecorp/redmine_project_specific_email_sender
+[submodule "plugins/redmine_default_assign"]
+	path = plugins/redmine_default_assign
+	url = https://github.com/Warecorp/redmine_default_assign
+[submodule "plugins/redmine_timesheet_plugin"]
+	path = plugins/redmine_timesheet_plugin
+	url = https://github.com/Warecorp/redmine_timesheet_plugin
+[submodule "plugins/redmine_cc_addresses"]
+	path = plugins/redmine_cc_addresses
+	url = https://github.com/Warecorp/redmine_cc_addresses
+[submodule "plugins/redmine_simple_join_project"]
+	path = plugins/redmine_simple_join_project
+	url = https://github.com/Warecorp/redmine_simple_join_project
+[submodule "plugins/redmine_project_support_hours"]
+	path = plugins/redmine_project_support_hours
+	url = https://github.com/Warecorp/redmine_project_support_hours
