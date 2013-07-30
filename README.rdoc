@@ -27,8 +27,13 @@ Start server:
   
 == Install plugins
 
-Copy plugins into 'plugins' folder and run
+Init submodules and update plugins:
 
-  rake redmine:plugins:migrate
+  $ git submodule init
+  $ git submodule update
+
+Run migration for plugins:
+
+  $ rake redmine:plugins:migrate
   
 Restart server. 
