@@ -3,3 +3,32 @@
 Redmine is a flexible project management web application written using Ruby on Rails framework.
 
 More details can be found in the doc directory or on the official website http://www.redmine.org
+
+== Install
+
+  $ git clone https://github.com/AlexKlim/redmine.git
+  $ cp config/database.yml.example config/database.yml
+  $ cp config/configuration.yml.example config/configuration.yml
+
+if need change params into database.yml and configuration.yml
+
+Start create db and migrations: 
+
+  $ rake db:create
+  $ rake db:migrate
+  
+Generate secret token
+
+  $ rake generate_secret_token
+  
+Start server:
+
+  $ rails s
+  
+== Install plugins
+
+Copy plugins into 'plugins' folder and run
+
+  rake redmine:plugins:migrate
+  
+Restart server. 
