@@ -6,7 +6,7 @@ More details can be found in the doc directory or on the official website http:/
 
 == Install
 
-  $ git clone https://github.com/AlexKlim/redmine.git
+  $ git clone https://github.com/Warecorp/redmine.git
   $ cp config/database.yml.example config/database.yml
   $ cp config/configuration.yml.example config/configuration.yml
 
