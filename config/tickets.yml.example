@@ -1,0 +1,9 @@
+production:
+  new_ticket_headers:
+    'X-Some-Header': '12345'
+    'X-Other-Header': 'abcdef'
+
+development:
+  new_ticket_headers:
+    'X-Some-Header': '12345'
+    'X-Other-Header': 'abcdef'
