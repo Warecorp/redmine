@@ -16,3 +16,6 @@
 [submodule "plugins/redmine_project_support_hours"]
 	path = plugins/redmine_project_support_hours
 	url = https://github.com/Warecorp/redmine_project_support_hours
+[submodule "plugins/redmine_omniauth_google"]
+	path = plugins/redmine_omniauth_google
+	url = https://github.com/Warecorp/redmine_omniauth_google.git
