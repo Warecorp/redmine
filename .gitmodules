@@ -19,3 +19,6 @@
 [submodule "plugins/redmine_omniauth_google"]
 	path = plugins/redmine_omniauth_google
 	url = https://github.com/Warecorp/redmine_omniauth_google.git
+[submodule "plugins/redmine-bulk_time_entry_plugin"]
+	path = plugins/redmine-bulk_time_entry_plugin
+	url = https://github.com/Warecorp/redmine-bulk_time_entry_plugin.git
