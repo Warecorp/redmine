@@ -1,4 +1,7 @@
-<h3><%=l(:label_spent_time)%> (<%= l(:label_last_n_days, 7) %>)</h3>
+<h3>
+  <%= link_to l(:label_spent_time), time_entries_path(:user_id => 'me') %>
+  (<%= l(:label_last_n_days, 7) %>)
+</h3>
 <%
 entries = timelog_items
 entries_by_day = entries.group_by(&:spent_on)
@@ -31,7 +34,7 @@ entries_by_day = entries.group_by(&:spent_on)
     <td class="subject"><%=h entry.project %> <%= h(' - ') + link_to_issue(entry.issue, :truncate => 50) if entry.issue %></td>
     <td class="comments"><%=h entry.comments %></td>
     <td class="hours"><%= html_hours("%.2f" % entry.hours) %></td>
-    <td align="center">
+    <td class="buttons">
     <% if entry.editable_by?(@user) -%>
         <%= link_to image_tag('edit.png'), {:controller => 'timelog', :action => 'edit', :id => entry},
                                            :title => l(:button_edit) %>

@@ -72,10 +72,9 @@
 #
 # === More configuration options
 #
-# See the "Configuration options" at the following website for a list of the
-# full options allowed:
+# See following page:
 #
-# http://wiki.rubyonrails.org/rails/pages/HowToSendEmailsWithActionMailer
+# http://guides.rubyonrails.org/action_mailer_basics.html#action-mailer-configuration
 
 
 # default configuration options for all environments
@@ -196,6 +195,11 @@ default:
 
   # Maximum number of simultaneous AJAX uploads
   #max_concurrent_ajax_uploads: 2
+
+  # Configure OpenIdAuthentication.store
+  #
+  # allowed values: :memory, :file, :memcache
+  #openid_authentication_store: :memory
 
 # specific configuration options for production environment
 # that overrides the default ones

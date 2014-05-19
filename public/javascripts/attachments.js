@@ -1,5 +1,5 @@
 /* Redmine - project management software
-   Copyright (C) 2006-2013  Jean-Philippe Lang */
+   Copyright (C) 2006-2014  Jean-Philippe Lang */
 
 function addFile(inputEl, file, eagerUpload) {
 
@@ -141,7 +141,7 @@ function uploadAndAttachFiles(files, inputEl) {
 
   var sizeExceeded = false;
   $.each(files, function() {
-    if (this.size && maxFileSize && this.size > parseInt(maxFileSize)) {sizeExceeded=true;}
+    if (this.size && maxFileSize != null && this.size > parseInt(maxFileSize)) {sizeExceeded=true;}
   });
   if (sizeExceeded) {
     window.alert(maxFileSizeExceeded);

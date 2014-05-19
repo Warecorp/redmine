@@ -137,6 +137,7 @@ pt:
         not_same_project: "não pertence ao mesmo projecto"
         circular_dependency: "Esta relação iria criar uma dependência circular"
         cant_link_an_issue_with_a_descendant: "Não é possível ligar uma tarefa a uma sub-tarefa que lhe é pertencente"
+        earlier_than_minimum_start_date: "cannot be earlier than %{date} because of preceding issues"
 
   ## Translated by: Pedro Araújo <phcrva19@hotmail.com>
   actionview_instancetag_blank_option: Seleccione
@@ -156,7 +157,6 @@ pt:
   notice_account_invalid_creditentials: Utilizador ou palavra-chave inválidos.
   notice_account_password_updated: A palavra-chave foi alterada com sucesso.
   notice_account_wrong_password: Palavra-chave errada.
-  notice_account_register_done: A conta foi criada com sucesso.
   notice_account_unknown_email: Utilizador desconhecido.
   notice_can_t_change_password: Esta conta utiliza uma fonte de autenticação externa. Não é possível alterar a palavra-chave.
   notice_account_lost_email_sent: Foi-lhe enviado um e-mail com as instruções para escolher uma nova palavra-chave.
@@ -170,7 +170,7 @@ pt:
   notice_not_authorized: Não está autorizado a visualizar esta página.
   notice_email_sent: "Foi enviado um e-mail para %{value}"
   notice_email_error: "Ocorreu um erro ao enviar o e-mail (%{value})"
-  notice_feeds_access_key_reseted: A sua chave de RSS foi inicializada.
+  notice_feeds_access_key_reseted: A sua chave de Atom foi inicializada.
   notice_failed_to_save_issues: "Não foi possível guardar %{count} tarefa(s) das %{total} seleccionadas: %{ids}."
   notice_no_issue_selected: "Nenhuma tarefa seleccionada! Por favor, seleccione as tarefas que quer editar."
   notice_account_pending: "A sua conta foi criada e está agora à espera de aprovação do administrador."
@@ -594,7 +594,7 @@ pt:
   label_language_based: Baseado na língua do utilizador
   label_sort_by: "Ordenar por %{value}"
   label_send_test_email: enviar um e-mail de teste
-  label_feeds_access_key_created_on: "Chave RSS criada há %{value} atrás"
+  label_feeds_access_key_created_on: "Chave Atom criada há %{value} atrás"
   label_module_plural: Módulos
   label_added_time_by: "Adicionado por %{author} há %{age} atrás"
   label_updated_time: "Alterado há %{value} atrás"
@@ -879,11 +879,11 @@ pt:
   label_revision_id: Revisão %{value}
   label_api_access_key: Chave de acesso API
   label_api_access_key_created_on: Chave de acesso API criada há %{value}
-  label_feeds_access_key: Chave de acesso RSS
+  label_feeds_access_key: Chave de acesso Atom
   notice_api_access_key_reseted: A sua chave de acesso API foi reinicializada.
   setting_rest_api_enabled: Activar serviço Web REST
   label_missing_api_access_key: Chave de acesso API em falta
-  label_missing_feeds_access_key: Chave de acesso RSS em falta
+  label_missing_feeds_access_key: Chave de acesso Atom em falta
   button_show: Mostrar
   text_line_separated: Vários valores permitidos (uma linha para cada valor).
   setting_mail_handler_body_delimiters: Truncar mensagens de correio electrónico após uma destas linhas
@@ -1091,5 +1091,33 @@ pt:
   setting_jsonp_enabled: Activar suporte JSONP
   field_inherit_members: Herdar membros
   field_closed_on: Fechado
-  setting_default_projects_tracker_ids: Default trackers for new projects
+  field_generate_password: Gerar palavra-chave
+  setting_default_projects_tracker_ids: Tipo de tarefa padrão para novos projectos
   label_total_time: Total
+  notice_account_not_activated_yet: Ainda não activou a sua conta. Se quiser
+    receber um novo email de activação, por favor carregue <a href="%{url}">nesta ligação</a>.
+  notice_account_locked: A sua conta está bloqueada.
+  notice_account_register_done: A conta foi criada com sucesso. Um email contendo
+    as instruções para activar a sua conta foi enviado para %{email}.
+  label_hidden: Escondido
+  label_visibility_private: apenas para mim
+  label_visibility_roles: apenas para estas funções
+  label_visibility_public: para qualquer utilizador
+  field_must_change_passwd: Tem que alterar a palavra-passe no próximo início de sessão
+  notice_new_password_must_be_different: A palavra-passe tem de ser diferente da actual
+  setting_mail_handler_excluded_filenames: Exclude attachments by name
+  text_convert_available: ImageMagick convert available (optional)
+  label_link: Link
+  label_only: only
+  label_drop_down_list: drop-down list
+  label_checkboxes: checkboxes
+  label_link_values_to: Link values to URL
+  setting_force_default_language_for_anonymous: Force default language for anonymous
+    users
+  setting_force_default_language_for_loggedin: Force default language for logged-in
+    users
+  label_custom_field_select_type: Select the type of object to which the custom field
+    is to be attached
+  label_check_for_updates: Check for updates
+  label_latest_compatible_version: Latest compatible version
+  label_unknown_plugin: Unknown plugin
