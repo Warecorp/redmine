@@ -22,3 +22,6 @@
 [submodule "plugins/redmine-bulk_time_entry_plugin"]
 	path = plugins/redmine-bulk_time_entry_plugin
 	url = https://github.com/Warecorp/redmine-bulk_time_entry_plugin.git
+[submodule "redmine_holidays_calendar"]
+	path = redmine_holidays_calendar
+	url = https://github.com/Warecorp/redmine_holidays_calendar
