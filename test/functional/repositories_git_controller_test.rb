@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -377,7 +377,7 @@ class RepositoriesGitControllerTest < ActionController::TestCase
                       :url           => REPOSITORY_PATH,
                       :identifier => 'test-diff-path',
                       :path_encoding => 'ISO-8859-1'
-                      );
+                      )
       assert repo
       assert_equal false, repo.is_default
       assert_equal 'test-diff-path', repo.identifier

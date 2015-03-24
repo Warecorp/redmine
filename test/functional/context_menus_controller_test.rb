@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -198,6 +198,18 @@ class ContextMenusControllerTest < ActionController::TestCase
     end
   end
 
+  def test_context_menu_should_show_enabled_custom_fields_for_the_role_only
+    enabled_cf = IssueCustomField.generate!(:field_format => 'bool', :is_for_all => true, :tracker_ids => [1], :visible => false, :role_ids => [1,2])
+    disabled_cf = IssueCustomField.generate!(:field_format => 'bool', :is_for_all => true, :tracker_ids => [1], :visible => false, :role_ids => [2])
+    issue = Issue.generate!(:project_id => 1, :tracker_id => 1)
+
+    @request.session[:user_id] = 2
+    get :issues, :ids => [issue.id]
+
+    assert_select "li.cf_#{enabled_cf.id}"
+    assert_select "li.cf_#{disabled_cf.id}", 0
+  end
+
   def test_context_menu_by_assignable_user_should_include_assigned_to_me_link
     @request.session[:user_id] = 2
     get :issues, :ids => [1]
@@ -236,6 +248,23 @@ class ContextMenusControllerTest < ActionController::TestCase
     assert_template 'context_menus/time_entries'
 
     assert_select 'a:not(.disabled)', :text => 'Edit'
+  end
+
+  def test_time_entries_context_menu_should_include_custom_fields
+    field = TimeEntryCustomField.generate!(:name => "Field", :field_format => "list", :possible_values => ["foo", "bar"])
+
+    @request.session[:user_id] = 2
+    get :time_entries, :ids => [1, 2]
+    assert_response :success
+    assert_select "li.cf_#{field.id}" do
+      assert_select 'a[href=#]', :text => "Field"
+      assert_select 'ul' do
+        assert_select 'a', 3
+        assert_select 'a[href=?]', "/time_entries/bulk_update?ids%5B%5D=1&amp;ids%5B%5D=2&amp;time_entry%5Bcustom_field_values%5D%5B#{field.id}%5D=foo", :text => 'foo'
+        assert_select 'a[href=?]', "/time_entries/bulk_update?ids%5B%5D=1&amp;ids%5B%5D=2&amp;time_entry%5Bcustom_field_values%5D%5B#{field.id}%5D=bar", :text => 'bar'
+        assert_select 'a[href=?]', "/time_entries/bulk_update?ids%5B%5D=1&amp;ids%5B%5D=2&amp;time_entry%5Bcustom_field_values%5D%5B#{field.id}%5D=__none__", :text => 'none'
+      end
+    end
   end
 
   def test_time_entries_context_menu_without_edit_permission

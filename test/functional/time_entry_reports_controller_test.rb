@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -99,7 +99,7 @@ class TimeEntryReportsControllerTest < ActionController::TestCase
     assert_equal "162.90", "%.2f" % assigns(:report).total_hours
   end
 
-  def test_report_custom_field_criteria_with_multiple_values
+  def test_report_custom_field_criteria_with_multiple_values_on_single_value_custom_field_should_not_fail
     field = TimeEntryCustomField.create!(:name => 'multi', :field_format => 'list', :possible_values => ['value1', 'value2'])
     entry = TimeEntry.create!(:project => Project.find(1), :hours => 1, :activity_id => 10, :user => User.find(2), :spent_on => Date.today)
     CustomValue.create!(:customized => entry, :custom_field => field, :value => 'value1')
@@ -107,6 +107,18 @@ class TimeEntryReportsControllerTest < ActionController::TestCase
 
     get :report, :project_id => 1, :columns => 'day', :criteria => ["cf_#{field.id}"]
     assert_response :success
+  end
+
+  def test_report_multiple_values_custom_fields_should_not_be_proposed
+    TimeEntryCustomField.create!(:name => 'Single', :field_format => 'list', :possible_values => ['value1', 'value2'])
+    TimeEntryCustomField.create!(:name => 'Multi', :field_format => 'list', :multiple => true, :possible_values => ['value1', 'value2'])
+
+    get :report, :project_id => 1
+    assert_response :success
+    assert_select 'select[name=?]', 'criteria[]' do
+      assert_select 'option', :text => 'Single'
+      assert_select 'option', :text => 'Multi', :count => 0
+    end
   end
 
   def test_report_one_day
@@ -118,13 +130,13 @@ class TimeEntryReportsControllerTest < ActionController::TestCase
   end
 
   def test_report_at_issue_level
-    get :report, :project_id => 1, :issue_id => 1, :columns => 'month', :from => "2007-01-01", :to => "2007-12-31", :criteria => ["user", "activity"]
+    get :report, :issue_id => 1, :columns => 'month', :from => "2007-01-01", :to => "2007-12-31", :criteria => ["user", "activity"]
     assert_response :success
     assert_template 'report'
     assert_not_nil assigns(:report)
     assert_equal "154.25", "%.2f" % assigns(:report).total_hours
     assert_tag :form,
-      :attributes => {:action => "/projects/ecookbook/issues/1/time_entries/report", :id => 'query_form'}
+      :attributes => {:action => "/issues/1/time_entries/report", :id => 'query_form'}
   end
 
   def test_report_by_week_should_use_commercial_year

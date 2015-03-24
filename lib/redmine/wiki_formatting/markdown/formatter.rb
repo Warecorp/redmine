@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ module Redmine
           unless link && link.starts_with?('/')
             css = 'external'
           end
-          content_tag('a', content.html_safe, :href => link, :title => title, :class => css)
+          content_tag('a', content.to_s.html_safe, :href => link, :title => title, :class => css)
         end
 
         def block_code(code, language)
@@ -127,7 +127,8 @@ module Redmine
             :space_after_headers => true,
             :tables => true,
             :strikethrough => true,
-            :superscript => true
+            :superscript => true,
+            :no_intra_emphasis => true
           )
         end
       end

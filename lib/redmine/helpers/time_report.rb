@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -137,7 +137,7 @@ module Redmine
         custom_fields += TimeEntryActivityCustomField.all
 
         # Add list and boolean custom fields as available criteria
-        custom_fields.select {|cf| %w(list bool).include? cf.field_format }.each do |cf|
+        custom_fields.select {|cf| %w(list bool).include?(cf.field_format) && !cf.multiple?}.each do |cf|
           @available_criteria["cf_#{cf.id}"] = {:sql => cf.group_statement,
                                                  :joins => cf.join_for_order_statement,
                                                  :format => cf.field_format,

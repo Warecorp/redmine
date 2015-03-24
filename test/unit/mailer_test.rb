@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -648,6 +648,12 @@ class MailerTest < ActiveSupport::TestCase
     assert ActionMailer::Base.deliveries.empty?
     # should restore perform_deliveries
     assert ActionMailer::Base.perform_deliveries
+  end
+
+  def test_token_for_should_strip_trailing_gt_from_address_with_full_name
+    with_settings :mail_from => "Redmine Mailer<no-reply@redmine.org>" do
+      assert_match /\Aredmine.issue-\d+\.\d+\.[0-9a-f]+@redmine.org\z/, Mailer.token_for(Issue.generate!)
+    end
   end
 
   def test_layout_should_include_the_emails_header

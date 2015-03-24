@@ -1,7 +1,7 @@
 # encoding: utf-8
 #
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -239,6 +239,15 @@ class AttachmentTest < ActiveSupport::TestCase
       assert response[:unsaved].second.new_record?
       assert_equal response[:unsaved], @project.unsaved_attachments
     end
+  end
+
+  test "Attachment.attach_files should preserve the content_type of attachments added by token" do
+    @project = Project.find(1)
+    attachment = Attachment.create!(:file => uploaded_test_file("testfile.txt", ""), :author_id => 1, :created_on => 2.days.ago)
+    assert_equal 'text/plain', attachment.content_type
+    Attachment.attach_files(@project, { '1' => {'token' => attachment.token } })
+    attachment.reload
+    assert_equal 'text/plain', attachment.content_type
   end
 
   def test_latest_attach

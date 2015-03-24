@@ -394,9 +394,9 @@ ru:
   general_csv_decimal_separator: ','
   general_csv_encoding: UTF-8
   general_csv_separator: ';'
+  general_pdf_fontname: freesans
   general_first_day_of_week: '1'
   general_lang_name: 'Russian (Русский)'
-  general_pdf_encoding: UTF-8
   general_text_no: 'нет'
   general_text_No: 'Нет'
   general_text_yes: 'да'
@@ -1218,6 +1218,10 @@ ru:
   setting_force_default_language_for_anonymous: Не определять язык для анонимных пользователей
   setting_force_default_language_for_loggedin: Не определять язык для зарегистрированных пользователей
   label_custom_field_select_type: Выберите тип объекта для которого будет создано настраиваемое поле
+  label_issue_assigned_to_updated: Assignee updated
   label_check_for_updates: Check for updates
   label_latest_compatible_version: Latest compatible version
   label_unknown_plugin: Unknown plugin
+  label_radio_buttons: radio buttons
+  label_group_anonymous: Anonymous users
+  label_group_non_member: Non member users

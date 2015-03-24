@@ -1,5 +1,5 @@
 # Redmine - project management software
-# Copyright (C) 2006-2014  Jean-Philippe Lang
+# Copyright (C) 2006-2015  Jean-Philippe Lang
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -60,7 +60,7 @@ module Redmine
         extension = m[2].downcase
         @known_types ||= Hash.new do |h, ext|
           type = EXTENSIONS[ext]
-          type ||= MIME::Types.find {|type| type.extensions.include?(ext)}.to_s.presence
+          type ||= MIME::Types.type_for(ext).first.to_s.presence
           h[ext] = type
         end
         @known_types[extension]
