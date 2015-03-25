@@ -25,3 +25,6 @@
 [submodule "plugins/redmine_holidays_calendar"]
 	path = plugins/redmine_holidays_calendar
 	url = https://github.com/Warecorp/redmine_holidays_calendar
+[submodule "plugins/redmine_slack"]
+	path = plugins/redmine_slack
+	url = https://github.com/Warecorp/redmine-slack
