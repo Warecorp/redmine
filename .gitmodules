@@ -28,3 +28,6 @@
 [submodule "plugins/redmine_slack"]
 	path = plugins/redmine_slack
 	url = https://github.com/Warecorp/redmine-slack
+[submodule "plugins/redmine_trackmine"]
+	path = plugins/redmine_trackmine
+	url = https://github.com/capita/redmine_trackmine.git
