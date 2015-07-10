@@ -10,6 +10,7 @@ gem "mime-types"
 gem "rbpdf", "~> 1.18.5"
 
 gem "i18n", "~> 0.6.11"
+gem 'strong_parameters', '~> 0.2.3'
 
 # Optional gem for LDAP authentication
 group :ldap do
