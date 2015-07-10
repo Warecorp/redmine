@@ -88,7 +88,8 @@ end
 
 group :test do
   gem "shoulda", "~> 3.3.2"
-  gem "shoulda-matchers", "1.4.1"
+  gem "shoulda-matchers"
+  gem "test-unit"
   gem "mocha", "~> 1.0.0", :require => 'mocha/api'
   if RUBY_VERSION >= '1.9.3'
     gem "capybara"

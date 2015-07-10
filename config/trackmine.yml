@@ -1,0 +1,6 @@
+ilya.andreyuk@warecorp.com:
+  token: f38bce334dde48b32158b20d2c282c5e
+
+error_notification:
+  recipient: ilya.andreyuk@warecorp.com
+  from: "Trackmine Notifications <no-reply@example.net>"
