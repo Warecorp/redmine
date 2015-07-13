@@ -124,7 +124,13 @@ class VersionTest < ActiveSupport::TestCase
     v5 = Version.create!(:project_id => 1, :name => 'v5', :effective_date => '2012-07-02')
 
     assert_equal [v5, v3, v1, v2, v4], [v1, v2, v3, v4, v5].sort
-    assert_equal [v5, v3, v1, v2, v4], Version.sorted.all
+    assert_equal [v5, v3, v1, v2, v4], Version.sorted.to_a
+  end
+
+  def test_should_sort_versions_with_same_date_by_name
+    v1 = Version.new(:effective_date => '2014-12-03', :name => 'v2')
+    v2 = Version.new(:effective_date => '2014-12-03', :name => 'v1')
+    assert_equal [v2, v1], [v1, v2].sort
   end
 
   def test_completed_should_be_false_when_due_today

@@ -25,7 +25,7 @@ module Redmine
         # Git executable name
         GIT_BIN = Redmine::Configuration['scm_git_command'] || "git"
 
-        class GitBranch < Branch 
+        class GitBranch < Branch
           attr_accessor :is_default
         end
 
@@ -47,10 +47,7 @@ module Redmine
           end
 
           def scm_command_version
-            scm_version = scm_version_from_command_line.dup
-            if scm_version.respond_to?(:force_encoding)
-              scm_version.force_encoding('ASCII-8BIT')
-            end
+            scm_version = scm_version_from_command_line.dup.force_encoding('ASCII-8BIT')
             if m = scm_version.match(%r{\A(.*?)((\d+\.)+\d+)})
               m[2].scan(%r{\d+}).collect(&:to_i)
             end
@@ -99,10 +96,12 @@ module Redmine
 
         def tags
           return @tags if @tags
+          @tags = []
           cmd_args = %w|tag|
           git_cmd(cmd_args) do |io|
             @tags = io.readlines.sort!.map{|t| t.strip}
           end
+          @tags
         rescue ScmCommandAborted
           nil
         end
@@ -113,7 +112,7 @@ module Redmine
           default_bras = bras.select{|x| x.is_default == true}
           return default_bras.first.to_s if ! default_bras.empty?
           master_bras = bras.select{|x| x.to_s == 'master'}
-          master_bras.empty? ? bras.first.to_s : 'master' 
+          master_bras.empty? ? bras.first.to_s : 'master'
         end
 
         def entry(path=nil, identifier=nil)
@@ -145,10 +144,7 @@ module Redmine
                 type = $1
                 sha  = $2
                 size = $3
-                name = $4
-                if name.respond_to?(:force_encoding)
-                  name.force_encoding(@path_encoding)
-                end
+                name = $4.force_encoding(@path_encoding)
                 full_path = p.empty? ? name : "#{p}/#{name}"
                 n      = scm_iconv('UTF-8', @path_encoding, name)
                 full_p = scm_iconv('UTF-8', @path_encoding, full_path)

@@ -443,7 +443,6 @@ th:
   label_used_by: ถูกใช้โดย
   label_details: รายละเอียด
   label_add_note: เพิ่มบันทึก
-  label_per_page: ต่อหน้า
   label_calendar: ปฏิทิน
   label_months_from: เดือนจาก
   label_gantt: Gantt
@@ -899,7 +898,7 @@ th:
   error_can_not_delete_custom_field: Unable to delete custom field
   error_unable_to_connect: Unable to connect (%{value})
   error_can_not_remove_role: This role is in use and can not be deleted.
-  error_can_not_delete_tracker: This tracker contains issues and can't be deleted.
+  error_can_not_delete_tracker: This tracker contains issues and cannot be deleted.
   field_principal: Principal
   label_my_page_block: My page block
   notice_failed_to_save_members: "Failed to save member(s): %{errors}."
@@ -1116,3 +1115,26 @@ th:
   label_radio_buttons: radio buttons
   label_group_anonymous: Anonymous users
   label_group_non_member: Non member users
+  label_add_projects: Add projects
+  field_default_status: Default status
+  text_subversion_repository_note: 'Examples: file:///, http://, https://, svn://, svn+[tunnelscheme]://'
+  field_users_visibility: Users visibility
+  label_users_visibility_all: All active users
+  label_users_visibility_members_of_visible_projects: Members of visible projects
+  label_edit_attachments: Edit attached files
+  setting_link_copied_issue: Link issues on copy
+  label_link_copied_issue: Link copied issue
+  label_ask: Ask
+  label_search_attachments_yes: Search attachment filenames and descriptions
+  label_search_attachments_no: Do not search attachments
+  label_search_attachments_only: Search attachments only
+  label_search_open_issues_only: Open issues only
+  field_address: อีเมล์
+  setting_max_additional_emails: Maximum number of additional email addresses
+  label_email_address_plural: Emails
+  label_email_address_add: Add email address
+  label_enable_notifications: Enable notifications
+  label_disable_notifications: Disable notifications
+  setting_search_results_per_page: Search results per page
+  label_blank_value: blank
+  permission_copy_issues: Copy issues

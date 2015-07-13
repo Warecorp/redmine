@@ -4,7 +4,62 @@ Redmine - project management software
 Copyright (C) 2006-2015  Jean-Philippe Lang
 http://www.redmine.org/
 
-== 2015-03-16 v2.6.3
+== 2015-07-07 v3.0.4
+
+* Defect #17757: Link with hash does not work on Firefox
+* Defect #19095: PDF is broken on iOS
+* Defect #19485: Column 'address' in where clause may be ambiguous
+* Defect #19815: Bulk issue copy copies subtasks and attachments even if option is unchecked
+* Defect #19835: Newlines stripped from CVS commit messages
+* Defect #19840: Missing validation for description size of versions
+* Defect #19842: User allowed to manage public queries in any project, can create public query visible to everyone for ALL projects
+* Defect #19844: Roles are not aligned on new member form
+* Defect #19956: Connection leak on svn/redmine integration
+* Defect #19957: acts_as_versioned not compatible with ActiveRecord 4.2.1
+* Defect #20066: List of groups sorted in desc by default
+* Defect #20118: Missing row in PDF if issue description contains '<'-character
+* Feature #19364: Images and Thumbnail are not interpreted in table while exporting PDF
+* Feature #20142: Update Gemfile to require rbpdf ~>1.18.6
+* Patch #19825: Russian translation update
+* Patch #20035: Italian translation update
+* Patch #20203: The test email action should use POST only (CSRF protection)
+
+== 2015-05-10 v3.0.3
+
+* Defect #18580: Can't bulk edit own time entries with "Edit own time entries"
+* Defect #19731: Issue validation fails if % done field is deactivated
+* Defect #19735: Email addresses with slashes are not linked correctly
+* Patch #19655: Set a back_url when forcing new login after session expiration
+* Patch #19706: Issue show : optimizations
+* Patch #19793: Adding flash messages to files_controller#create
+
+== 2015-04-26 v3.0.2
+
+* Defect #19297: Custom fields with hidden/read-only combination displayed in Issue Edit Form
+* Defect #19400: Possibility of having 2 (or more) repositories with empty identifier
+* Defect #19444: Fix typo in wiki_syntax_detailed.html
+* Defect #19538: Keywords in commit messages: journal entries are created even if nothing was changed
+* Defect #19569: Field permissions not working properly with inherited memberships
+* Defect #19580: "Required" and "Read-only" rules on "Fields Permissions" screen are not colored 
+* Defect #13583: Space between lines in nested lists not equal
+* Defect #19161: 500 Internal error: sorting for column mail at Administration/User
+* Defect #19163: Bulk edit form shows additional custom fields
+* Defect #19168: Activity: changes made to tickets are shown multiple times
+* Defect #19185: Update Install/Upgrade guide for 3.x version and get gid of DEPRECATION WARNING: You didn't set config.secret_key_base
+* Defect #19276: Creating new issues with invalid project_id should return 422 instead of 403 error
+* Defect #19405: Setting config.logger.level in additional_environment.rb has no effect
+* Defect #19464: Possible to log time on project without time tracking
+* Defect #19482: Custom field (long text format) displayed even if empty
+* Defect #19537: Broken HTML sanitizer refence breaks email receiving
+* Defect #19544: Malformed SQL query with SQLServer when grouping issues
+* Defect #19553: When create by copying the issue, status can not be changed to default
+* Defect #19558: Mail handler should not ignore emails with x-auto-response-suppress header
+* Defect #19606: Issue Estimated Time not updated on tracker change
+* Feature #19437: Upgrade to Rails 4.2.1
+* Feature #19489: Translation for Spanish Panama
+* Patch #19570: Spanish translation updated
+
+== 2015-03-16 v3.0.1
 
 * Defect #19197: Missing notification if assignee was a group
 * Defect #19260: Non-default identifier-less git repositories are undeletable
@@ -12,6 +67,96 @@ http://www.redmine.org/
 * Defect #19313: Attached inline images with non-ascii file name can not be seen when text formatting is Makdown
 * Defect #19348: Project name is missing for versions from sub-projects
 * Defect #19381: Wrong syntax for wiki macros in wiki_syntax_detailed.html
+* Defect #19172: "gem update bundler" suggestion for "`x64_mingw` is not a valid platform"
+* Defect #19218: Wrong name for pt-BR in language drop-down
+* Defect #19225: When deleting one item from multivalued custom field / list of users, name of removed user is not visible in history
+* Defect #19232: IMAP STARTTLS options typo :tls
+* Defect #19253: Repository users broken if only one committer exists
+* Defect #19316: CustomField#possible_values may raise undefined method `force_encoding' error
+* Defect #19320: Spent time (last 7 days) in My page not updated
+* Defect #19323: Incorrect links generated in emails if host setup uses other port (":" symbol)
+* Defect #19325: ActionController::UnknownFormat: error for PDF request and unknown user
+* Defect #19354: Unexpected milliseconds in JSON time attributes
+* Defect #19368: Creating an issue without tracker_id attribute ignores custom field values
+* Patch #19233: Change 20150113213922_remove_users_mail.rb from Irreversible to Reversible
+* Patch #19322: Allow to ignore auto reply messages from Exchange server
+
+== 2015-02-19 v3.0.0
+
+* Defect #2573: Latest projects list: no space after lists in project description
+* Defect #6579: Tree hierachy being currupted on multiple submissions of an issue
+* Defect #14151: Grammer problem with German x_days
+* Defect #15789: Users can see all groups when adding a filter "Assignee's Group"
+* Defect #15988: Unexpected behaviour on issue fields for users that have multiple roles
+* Defect #18237: From a rake task context, impossible to create an IssueRelation normally
+* Defect #18265: Wrong csv separator in Croatian
+* Defect #18301: Revision shortlink at end of URL breaks URL autolinking
+* Defect #18314: German Translation - button_update
+* Defect #18605: Wrong usage of logger.info to test log level
+* Defect #18654: Custom field is rendered, even if its value is empty (for multiple)
+* Defect #18711: Respect cross-project subtask setting on issue bulk edit form
+* Defect #18781: Redmine::FieldFormat::IntFormat does not accept "real" Integer values
+* Defect #18832: Activity Stream Filter missing on right hand side due to permission
+* Defect #18855: User with only Move Issue rights in the project can still create issues using mass copy!
+* Defect #18918: Grouping label for "none" should be changed to "null", "No Value", or" (blank) ".
+* Defect #19024: link_to in Redmine::Hook::ViewListener omits url root
+* Defect #19030: Links to completed versions on the roadmap page might lead to a "403 not authorized page"
+* Defect #19039: Mail notification is formatting dates with changer's locale
+* Defect #19040: Potential DB deadlocks on concurrent issue creation
+* Defect #19055: 'label_per_page' is no longer used
+* Defect #19111: Bad spelling in Spanish "mail_body_reminder"
+* Feature #992: Option to search open issues only
+* Feature #1326: Add / edit an attachment description after upload
+* Feature #1415: Let system administrator limit repositories valid sources
+* Feature #4244: Multiple email addresses for each user
+* Feature #4383: Search Names of Files Attached to Issues
+* Feature #4518: Wiki formatting documentation for nested lists
+* Feature #5450: Move wiki page to other project
+* Feature #5991: Tracker should have it's own default issue status
+* Feature #6426: MenuManager::MenuItem should support a named route as a url
+* Feature #7249: Custom fields for Documents
+* Feature #8121: Allow overriding direction of part of text
+* Feature #8818: Repository user-mapping with multiple email addresses
+* Feature #11702: Add user/group to multiple projects at once
+* Feature #11724: Prevent users from seeing other users based on their project membership
+* Feature #12097: Multi Thread Support
+* Feature #12734: Add table reference to textile help
+* Feature #13051: Support any macro in (pdf) export for wiki's and issues
+* Feature #13425: Ignore X-Autoreply mails
+* Feature #13497: Document all available Redmine links properly
+* Feature #13849: Grouped filters in the filter drop-down
+* Feature #14371: Drop Ruby 1.8.7 support
+* Feature #14534: Upgrade to Rails 4.2
+* Feature #15236: Propose diff view for long text custom fields
+* Feature #16823: IMAP STARTTLS support
+* Feature #17354: User detail : show user login to admins
+* Feature #17763: Ability to render multiple partials with view hook
+* Feature #18500: Optional linking when copying issues
+* Feature #18571: Tab "New Issue" should not be displayed if a project has no trackers
+* Feature #18631: Better search results pagination
+* Feature #18801: Support for accent insensitive search with PostgreSQL
+* Feature #18860: Replace awesome_nested_set gem with a custom implementation of nested sets
+* Feature #18947: Ruby 2.2 support
+* Feature #19131: Use a better content type for attachments created with application/octet-stream
+* Patch #6586: Calendar view hook Request
+* Patch #13120: Translation in language selection
+* Patch #18182: Latvian translation update
+* Patch #18261: Japanese translation change (fix terms mismatch "default")
+* Patch #18276: Allow queries captions to be dynamic
+* Patch #18290: Issue performance patch
+* Patch #18390: Better RTL css for the system
+* Patch #18392: German translation: Self-registration
+* Patch #18565: html improvements on project landing page
+* Patch #18659: Do not truncate subissue/related issues titles on single issue view
+* Patch #18671: Japanese translation change (fix misspelled word)
+* Patch #18679: LabelledFormBuilder#label outputs 2 label elements
+* Patch #18692: Access keys for previous (p)/next (n) links
+* Patch #18707: Allow attachment thumbnails from REST api
+* Patch #18817: Sort helper undefined to_a for string
+* Patch #18818: TimeEntry acts_as_activity_provider scope should joins(:project)
+* Patch #18983: Allow filtering of Redmine Reminders by Version
+* Patch #19005: Make search results per page configurable
+* Patch #19035: Japanese translation fix (label_age)
 
 == 2015-02-19 v2.6.2
 

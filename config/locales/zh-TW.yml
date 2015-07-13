@@ -312,6 +312,7 @@
   field_firstname: 名字
   field_lastname: 姓氏
   field_mail: 電子郵件
+  field_address: 電子郵件地址
   field_filename: 檔案名稱
   field_filesize: 大小
   field_downloads: 下載次數
@@ -422,6 +423,8 @@
   field_inherit_members: 繼承父專案成員
   field_generate_password: 產生密碼
   field_must_change_passwd: 必須在下次登入時變更密碼
+  field_default_status: 預設狀態
+  field_users_visibility: 用戶可見度
 
   setting_app_title: 標題
   setting_app_subtitle: 副標題
@@ -454,7 +457,7 @@
   setting_emails_footer: 電子郵件附帶說明
   setting_protocol: 協定
   setting_per_page_options: 每頁顯示個數選項
-  setting_user_format: 使用者顯示格式
+  setting_user_format: 用戶顯示格式
   setting_activity_days_default: 專案活動顯示天數
   setting_display_subprojects_issues: 預設於父專案中顯示子專案的問題
   setting_enabled_scm: 啟用的 SCM
@@ -495,6 +498,9 @@
   setting_mail_handler_excluded_filenames: 移除符合下列名稱的附件
   setting_force_default_language_for_anonymous: 強迫匿名用戶使用預設語言
   setting_force_default_language_for_loggedin: 強迫已登入用戶使用預設語言
+  setting_link_copied_issue: 複製時連結問題
+  setting_max_additional_emails: 其他電子郵件地址的最大值
+  setting_search_results_per_page: 每一頁的搜尋結果數目
 
   permission_add_project: 建立專案
   permission_add_subprojects: 建立子專案
@@ -508,6 +514,7 @@
   permission_view_issues: 檢視問題
   permission_add_issues: 新增問題
   permission_edit_issues: 編輯問題
+  permission_copy_issues: 複製問題
   permission_manage_issue_relations: 管理問題關聯
   permission_set_issues_private: 設定問題為公開或私人
   permission_set_own_issues_private: 設定自己的問題為公開或私人
@@ -726,7 +733,6 @@
   label_used_by: 已使用專案
   label_details: 明細
   label_add_note: 加入一個新筆記
-  label_per_page: 每頁
   label_calendar: 日曆
   label_months_from: 個月, 開始月份
   label_gantt: 甘特圖
@@ -1003,6 +1009,21 @@
   label_check_for_updates: 檢查更新
   label_latest_compatible_version: 最新的相容版本
   label_unknown_plugin: 無法辨識的外掛程式
+  label_add_projects: 加入專案
+  label_users_visibility_all: 所有活動中的用戶
+  label_users_visibility_members_of_visible_projects: 可見專案中的成員
+  label_edit_attachments: 編輯附加檔案
+  label_link_copied_issue: 連結到被複製的問題
+  label_ask: 詢問
+  label_search_attachments_yes: 搜尋附加檔案的檔案名稱與說明
+  label_search_attachments_no: 不搜尋附加檔案
+  label_search_attachments_only: 僅搜尋附加檔案
+  label_search_open_issues_only: 僅搜尋進行中的問題
+  label_email_address_plural: 電子郵件
+  label_email_address_add: 新增電子郵件地址
+  label_enable_notifications: 啟用通知
+  label_disable_notifications: 停用通知
+  label_blank_value: 空白
 
   button_login: 登入
   button_submit: 送出
@@ -1135,6 +1156,7 @@
   text_zoom_out: 縮小
   text_warn_on_leaving_unsaved: "若您離開這個頁面，此頁面所包含的未儲存資料將會遺失。"
   text_scm_path_encoding_note: "預設: UTF-8"
+  text_subversion_repository_note: "範例: file:///, http://, https://, svn://, svn+[tunnelscheme]://"
   text_git_repository_note: 儲存機制是本機的空(bare)目錄 (即： /gitrepo, c:\gitrepo)
   text_mercurial_repository_note: 本機儲存機制 (即： /hgrepo, c:\hgrepo)
   text_scm_command: 命令

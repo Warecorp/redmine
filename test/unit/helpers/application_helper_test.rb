@@ -25,6 +25,7 @@ class ApplicationHelperTest < ActionView::TestCase
   include Rails.application.routes.url_helpers
 
   fixtures :projects, :roles, :enabled_modules, :users,
+           :email_addresses,
            :repositories, :changesets,
            :projects_trackers,
            :trackers, :issue_statuses, :issues, :versions, :documents,
@@ -35,10 +36,7 @@ class ApplicationHelperTest < ActionView::TestCase
   def setup
     super
     set_tmp_attachments_directory
-    @russian_test = "\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"
-    if @russian_test.respond_to?(:force_encoding)
-      @russian_test.force_encoding('UTF-8')
-    end
+    @russian_test = "\xd1\x82\xd0\xb5\xd1\x81\xd1\x82".force_encoding('UTF-8')
   end
 
   test "#link_to_if_authorized for authorized user should allow using the :controller and :action for the target link" do
@@ -99,16 +97,12 @@ class ApplicationHelperTest < ActionView::TestCase
     to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text) }
   end
 
-  if 'ruby'.respond_to?(:encoding)
-    def test_auto_links_with_non_ascii_characters
-      to_test = {
-        "http://foo.bar/#{@russian_test}" =>
-          %|<a class="external" href="http://foo.bar/#{@russian_test}">http://foo.bar/#{@russian_test}</a>|
-      }
-      to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text) }
-    end
-  else
-    puts 'Skipping test_auto_links_with_non_ascii_characters, unsupported ruby version'
+  def test_auto_links_with_non_ascii_characters
+    to_test = {
+      "http://foo.bar/#{@russian_test}" =>
+        %|<a class="external" href="http://foo.bar/#{@russian_test}">http://foo.bar/#{@russian_test}</a>|
+    }
+    to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text) }
   end
 
   def test_auto_mailto
@@ -165,14 +159,14 @@ RAW
     end
   end
 
-  if Object.const_defined?(:Redcarpet)
   def test_attached_images_with_markdown_and_non_ascii_filename
+    skip unless Object.const_defined?(:Redcarpet)
+
     attachment = Attachment.generate!(:filename => 'café.jpg')
     with_settings :text_formatting => 'markdown' do
       assert_include %(<img src="/attachments/download/#{attachment.id}/caf%C3%A9.jpg" alt="">),
         textilizable("![](café.jpg)", :attachments => [attachment])
     end
-  end
   end
 
   def test_attached_images_filename_extension
@@ -272,16 +266,12 @@ RAW
     to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text) }
   end
 
-  if 'ruby'.respond_to?(:encoding)
-    def test_textile_external_links_with_non_ascii_characters
-      to_test = {
-        %|This is a "link":http://foo.bar/#{@russian_test}| =>
-          %|This is a <a href="http://foo.bar/#{@russian_test}" class="external">link</a>|
-      }
-      to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text) }
-    end
-  else
-    puts 'Skipping test_textile_external_links_with_non_ascii_characters, unsupported ruby version'
+  def test_textile_external_links_with_non_ascii_characters
+    to_test = {
+      %|This is a "link":http://foo.bar/#{@russian_test}| =>
+        %|This is a <a href="http://foo.bar/#{@russian_test}" class="external">link</a>|
+    }
+    to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text) }
   end
 
   def test_redmine_links
@@ -390,6 +380,12 @@ RAW
     }
     @project = Project.find(1)
     to_test.each { |text, result| assert_equal "<p>#{result}</p>", textilizable(text), "#{text} failed" }
+  end
+
+  def test_should_not_parse_redmine_links_inside_link
+    raw = "r1 should not be parsed in http://example.com/url-r1/"
+    assert_match %r{<p><a class="changeset".*>r1</a> should not be parsed in <a class="external" href="http://example.com/url-r1/">http://example.com/url-r1/</a></p>},
+      textilizable(raw, :project => Project.find(1))
   end
 
   def test_redmine_links_with_a_different_project_before_current_project
@@ -968,7 +964,7 @@ RAW
     result2 = link_to('#1',
                       "/issues/1",
                       :class => Issue.find(1).css_classes,
-                      :title => "Can't print recipes (New)")
+                      :title => "Cannot print recipes (New)")
 
     expected = <<-EXPECTED
 <p>#{result1}</p>
@@ -1240,15 +1236,15 @@ RAW
     result = textilizable(raw, :edit_section_links => {:controller => 'wiki', :action => 'edit', :project_id => '1', :id => 'Test'}).gsub("\n", "")
 
     # heading that contains inline code
-    assert_match Regexp.new('<div class="contextual" id="section-4" title="Edit this section">' +
-      '<a href="/projects/1/wiki/Test/edit\?section=4"><img alt="Edit" src="/images/edit.png(\?\d+)?" /></a></div>' +
+    assert_match Regexp.new('<div class="contextual" title="Edit this section" id="section-4">' +
+      '<a href="/projects/1/wiki/Test/edit\?section=4"><img src="/images/edit.png(\?\d+)?" alt="Edit" /></a></div>' +
       '<a name="Subtitle-with-inline-code"></a>' +
       '<h2 >Subtitle with <code>inline code</code><a href="#Subtitle-with-inline-code" class="wiki-anchor">&para;</a></h2>'),
       result
 
     # last heading
-    assert_match Regexp.new('<div class="contextual" id="section-5" title="Edit this section">' +
-      '<a href="/projects/1/wiki/Test/edit\?section=5"><img alt="Edit" src="/images/edit.png(\?\d+)?" /></a></div>' +
+    assert_match Regexp.new('<div class="contextual" title="Edit this section" id="section-5">' +
+      '<a href="/projects/1/wiki/Test/edit\?section=5"><img src="/images/edit.png(\?\d+)?" alt="Edit" /></a></div>' +
       '<a name="Subtitle-after-pre-tag"></a>' +
       '<h2 >Subtitle after pre tag<a href="#Subtitle-after-pre-tag" class="wiki-anchor">&para;</a></h2>'),
       result
@@ -1346,21 +1342,17 @@ RAW
 
   def test_thumbnail_tag
     a = Attachment.find(3)
-    assert_equal '<a href="/attachments/3/logo.gif" title="logo.gif"><img alt="3" src="/attachments/thumbnail/3" /></a>',
-      thumbnail_tag(a)
+    assert_select_in thumbnail_tag(a),
+      'a[href=?][title=?] img[alt="3"][src=?]',
+      "/attachments/3/logo.gif", "logo.gif", "/attachments/thumbnail/3"
   end
 
   def test_link_to_project
     project = Project.find(1)
     assert_equal %(<a href="/projects/ecookbook">eCookbook</a>),
                  link_to_project(project)
-    assert_equal %(<a href="/projects/ecookbook/settings">eCookbook</a>),
-                 link_to_project(project, :action => 'settings')
     assert_equal %(<a href="http://test.host/projects/ecookbook?jump=blah">eCookbook</a>),
                  link_to_project(project, {:only_path => false, :jump => 'blah'})
-    result = link_to("eCookbook", "/projects/ecookbook/settings", :class => "project")
-    assert_equal result,
-                 link_to_project(project, {:action => 'settings'}, :class => "project")
   end
 
   def test_link_to_project_settings
@@ -1397,6 +1389,7 @@ RAW
 
   def test_principals_options_for_select_with_users_and_groups
     User.current = nil
+    set_language_if_valid 'en'
     users = [User.find(2), Group.find(11), User.find(4), Group.find(10)]
     assert_equal %(<option value="2">John Smith</option><option value="4">Robert Hill</option>) +
       %(<optgroup label="Groups"><option value="10">A Team</option><option value="11">B Team</option></optgroup>),
@@ -1408,6 +1401,7 @@ RAW
   end
 
   def test_principals_options_for_select_should_include_me_option_when_current_user_is_in_collection
+    set_language_if_valid 'en'
     users = [User.find(2), User.find(4)]
     User.current = User.find(4)
     assert_include '<option value="4">&lt;&lt; me &gt;&gt;</option>', principals_options_for_select(users)
@@ -1451,7 +1445,7 @@ RAW
 
   def test_raw_json_should_escape_closing_tags
     s = raw_json(["<foo>bar</foo>"])
-    assert_equal '["<foo>bar<\/foo>"]', s
+    assert_include '\/foo', s
   end
 
   def test_raw_json_should_be_html_safe
@@ -1526,8 +1520,7 @@ RAW
   end
 
   def test_truncate_single_line_non_ascii
-    ja = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"
-    ja.force_encoding('UTF-8') if ja.respond_to?(:force_encoding)
+    ja = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e".force_encoding('UTF-8')
     result = truncate_single_line_raw("#{ja}\n#{ja}\n#{ja}", 10)
     assert_equal "#{ja} #{ja}...", result
     assert !result.html_safe?

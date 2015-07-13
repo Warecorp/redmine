@@ -20,35 +20,15 @@ require File.expand_path('../../../test_helper', __FILE__)
 class Redmine::ApiTest::MembershipsTest < Redmine::ApiTest::Base
   fixtures :projects, :users, :roles, :members, :member_roles
 
-  def setup
-    Setting.rest_api_enabled = '1'
-  end
-
   test "GET /projects/:project_id/memberships.xml should return memberships" do
     get '/projects/1/memberships.xml', {}, credentials('jsmith')
 
     assert_response :success
     assert_equal 'application/xml', @response.content_type
-    assert_tag :tag => 'memberships',
-      :attributes => {:type => 'array'},
-      :child => {
-        :tag => 'membership',
-        :child => {
-          :tag => 'id',
-          :content => '2',
-          :sibling => {
-            :tag => 'user',
-            :attributes => {:id => '3', :name => 'Dave Lopper'},
-            :sibling => {
-              :tag => 'roles',
-              :child => {
-                :tag => 'role',
-                :attributes => {:id => '2', :name => 'Developer'}
-              }
-            }
-          }
-        }
-      }
+    assert_select 'memberships[type=array] membership id', :text => '2' do
+      assert_select '~ user[id="3"][name="Dave Lopper"]'
+      assert_select '~ roles role[id="2"][name=Developer]'
+    end
   end
 
   test "GET /projects/:project_id/memberships.json should return memberships" do
@@ -105,7 +85,7 @@ class Redmine::ApiTest::MembershipsTest < Redmine::ApiTest::Base
 
       assert_response :unprocessable_entity
       assert_equal 'application/xml', @response.content_type
-      assert_tag 'errors', :child => {:tag => 'error', :content => "Principal can't be blank"}
+      assert_select 'errors error', :text => "Principal cannot be blank"
     end
   end
 
@@ -114,22 +94,10 @@ class Redmine::ApiTest::MembershipsTest < Redmine::ApiTest::Base
 
     assert_response :success
     assert_equal 'application/xml', @response.content_type
-    assert_tag :tag => 'membership',
-      :child => {
-        :tag => 'id',
-        :content => '2',
-        :sibling => {
-          :tag => 'user',
-          :attributes => {:id => '3', :name => 'Dave Lopper'},
-          :sibling => {
-            :tag => 'roles',
-            :child => {
-              :tag => 'role',
-              :attributes => {:id => '2', :name => 'Developer'}
-            }
-          }
-        }
-      }
+    assert_select 'membership id', :text => '2' do
+      assert_select '~ user[id="3"][name="Dave Lopper"]'
+      assert_select '~ roles role[id="2"][name=Developer]'
+    end
   end
 
   test "GET /memberships/:id.json should return the membership" do
@@ -165,7 +133,7 @@ class Redmine::ApiTest::MembershipsTest < Redmine::ApiTest::Base
 
     assert_response :unprocessable_entity
     assert_equal 'application/xml', @response.content_type
-    assert_tag 'errors', :child => {:tag => 'error', :content => /member_roles is invalid/}
+    assert_select 'errors error', :text => "Role cannot be empty"
   end
 
   test "DELETE /memberships/:id.xml should destroy the membership" do
@@ -180,7 +148,7 @@ class Redmine::ApiTest::MembershipsTest < Redmine::ApiTest::Base
 
   test "DELETE /memberships/:id.xml should respond with 422 on failure" do
     assert_no_difference 'Member.count' do
-      # A membership with an inherited role can't be deleted
+      # A membership with an inherited role cannot be deleted
       Member.find(2).member_roles.first.update_attribute :inherited_from, 99
       delete '/memberships/2.xml', {}, credentials('jsmith')
 

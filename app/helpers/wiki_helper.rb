@@ -18,6 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 module WikiHelper
+  include Redmine::Export::PDF::WikiPdfHelper
 
   def wiki_page_options_for_select(pages, selected = nil, parent = nil, level = 0)
     pages = pages.group_by(&:parent) unless pages.is_a?(Hash)
@@ -33,6 +34,16 @@ module WikiHelper
       end
     end
     s
+  end
+
+  def wiki_page_wiki_options_for_select(page)
+    projects = Project.allowed_to(:rename_wiki_pages).joins(:wiki).preload(:wiki).to_a
+    projects << page.project unless projects.include?(page.project)
+
+    project_tree_options_for_select(projects, :selected => page.project) do |project|
+      wiki_id = project.wiki.try(:id)
+      {:value => wiki_id, :selected => wiki_id == page.wiki_id}
+    end
   end
 
   def wiki_page_breadcrumb(page)

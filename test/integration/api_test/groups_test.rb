@@ -18,11 +18,7 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
-  fixtures :users, :groups_users
-
-  def setup
-    Setting.rest_api_enabled = '1'
-  end
+  fixtures :users, :groups_users, :email_addresses
 
   test "GET /groups.xml should require authentication" do
     get '/groups.xml'
@@ -109,7 +105,7 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
     assert_select 'group' do
       assert_select 'users' do
         assert_select 'user', Group.find(10).users.count
-        assert_select 'user[id=8]'
+        assert_select 'user[id="8"]'
       end
     end
   end
@@ -148,7 +144,7 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
     assert_equal 'application/xml', response.content_type
 
     assert_select 'errors' do
-      assert_select 'error', :text => /Name can't be blank/
+      assert_select 'error', :text => /Name cannot be blank/
     end
   end
 
@@ -168,7 +164,7 @@ class Redmine::ApiTest::GroupsTest < Redmine::ApiTest::Base
     assert_equal 'application/xml', response.content_type
 
     assert_select 'errors' do
-      assert_select 'error', :text => /Name can't be blank/
+      assert_select 'error', :text => /Name cannot be blank/
     end
   end
 

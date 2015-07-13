@@ -229,7 +229,8 @@ bg:
   field_is_required: Задължително
   field_firstname: Име
   field_lastname: Фамилия
-  field_mail: Email
+  field_mail: Имейл
+  field_address: Имейл
   field_filename: Файл
   field_filesize: Големина
   field_downloads: Изтеглени файлове
@@ -340,6 +341,8 @@ bg:
   field_inherit_members: Наследяване на членовете на родителския проект
   field_generate_password: Генериране на парола
   field_must_change_passwd: Паролата трябва да бъде сменена при следващото влизане в Redmine
+  field_default_status: Състояние по подразбиране
+  field_users_visibility: Видимост на потребителите
 
   setting_app_title: Заглавие
   setting_app_subtitle: Описание
@@ -413,6 +416,9 @@ bg:
   setting_mail_handler_excluded_filenames: Имена на прикачени файлове, които да се пропускат при приемане на e-mail-и (например *.vcf, companylogo.gif).
   setting_force_default_language_for_anonymous: Задължително език по подразбиране за анонимните потребители
   setting_force_default_language_for_loggedin: Задължително език по подразбиране за потребителите, влезли в Redmine
+  setting_link_copied_issue: Свързване на задачите при копиране
+  setting_max_additional_emails: Максимален брой на допълнителните имейл адреси
+  setting_search_results_per_page: Резултати от търсене на страница
 
   permission_add_project: Създаване на проект
   permission_add_subprojects: Създаване на подпроекти
@@ -426,6 +432,7 @@ bg:
   permission_view_issues: Разглеждане на задачите
   permission_add_issues: Добавяне на задачи
   permission_edit_issues: Редактиране на задачи
+  permission_copy_issues: Копиране на задачи
   permission_manage_issue_relations: Управление на връзките между задачите
   permission_set_own_issues_private: Установяване на собствените задачи публични или лични
   permission_set_issues_private: Установяване на задачите публични или лични
@@ -644,7 +651,6 @@ bg:
   label_used_by: Използва се от
   label_details: Детайли
   label_add_note: Добавяне на бележка
-  label_per_page: На страница
   label_calendar: Календар
   label_months_from: месеца от
   label_gantt: Мрежов график
@@ -921,6 +927,21 @@ bg:
   label_check_for_updates: Проверка за нови версии
   label_latest_compatible_version: Последна съвместима версия
   label_unknown_plugin: Непознат плъгин
+  label_add_projects: Добавяне на проекти
+  label_users_visibility_all: Всички активни потребители
+  label_users_visibility_members_of_visible_projects: Членовете на видимите проекти
+  label_edit_attachments: Редактиране на прикачените файлове
+  label_link_copied_issue: Създаване на връзка между задачите
+  label_ask: Питане преди копиране
+  label_search_attachments_yes: Търсене на имената на прикачените файлове и техните описания
+  label_search_attachments_no: Да не се претърсват прикачените файлове
+  label_search_attachments_only: Търсене само на прикачените файлове
+  label_search_open_issues_only: Търсене само на задачите
+  label_email_address_plural: Имейли
+  label_email_address_add: Добавяне на имейл адрес
+  label_enable_notifications: Разрешаване на известията
+  label_disable_notifications: Забрана на известията
+  label_blank_value: празно
 
   button_login: Вход
   button_submit: Изпращане
@@ -1053,6 +1074,7 @@ bg:
   text_zoom_out: Намаляване
   text_warn_on_leaving_unsaved: Страницата съдържа незаписано съдържание, което може да бъде загубено, ако я напуснете.
   text_scm_path_encoding_note: "По подразбиране: UTF-8"
+  text_subversion_repository_note: 'Примери: file:///, http://, https://, svn://, svn+[tunnelscheme]://'
   text_git_repository_note: Празно и локално хранилище (например /gitrepo, c:\gitrepo)
   text_mercurial_repository_note: Локално хранилище (например /hgrepo, c:\hgrepo)
   text_scm_command: SCM команда

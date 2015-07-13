@@ -31,26 +31,6 @@ class Redmine::MenuManager::MenuHelperTest < ActionView::TestCase
     end
   end
 
-  context "MenuManager#current_menu_item" do
-    should "be tested"
-  end
-
-  context "MenuManager#render_main_menu" do
-    should "be tested"
-  end
-
-  context "MenuManager#render_menu" do
-    should "be tested"
-  end
-
-  context "MenuManager#menu_item_and_children" do
-    should "be tested"
-  end
-
-  context "MenuManager#extract_node_details" do
-    should "be tested"
-  end
-
   def test_render_single_menu_node
     node = Redmine::MenuManager::MenuItem.new(:testing, '/test', { })
     @output_buffer = render_single_menu_node(node, 'This is a test', node.url, false)
@@ -65,6 +45,20 @@ class Redmine::MenuManager::MenuHelperTest < ActionView::TestCase
     assert_select("li") do
       assert_select("a.single-node", "Single node")
     end
+  end
+
+  def test_render_menu_node_with_symbol_as_url
+    node = Redmine::MenuManager::MenuItem.new(:testing, :issues_path)
+    @output_buffer = render_menu_node(node, nil)
+
+    assert_select 'a[href="/issues"]', "Testing"
+  end
+
+  def test_render_menu_node_with_symbol_as_url_and_project
+    node = Redmine::MenuManager::MenuItem.new(:testing, :project_issues_path)
+    @output_buffer = render_menu_node(node, Project.find(1))
+
+    assert_select 'a[href="/projects/ecookbook/issues"]', "Testing"
   end
 
   def test_render_menu_node_with_nested_items
@@ -234,6 +228,19 @@ class Redmine::MenuManager::MenuHelperTest < ActionView::TestCase
 
     items = menu_items_for(menu_name, Project.find(1))
     assert_equal 2, items.size
+  end
+
+  def test_menu_items_for_should_skip_items_that_fail_the_permission
+    menu_name = :test_menu_items_for_should_skip_items_that_fail_the_permission
+    Redmine::MenuManager.map menu_name do |menu|
+      menu.push(:a_menu, :project_issues_path)
+      menu.push(:unallowed, :project_issues_path, :permission => :unallowed)
+    end
+
+    User.current = User.find(2)
+
+    items = menu_items_for(menu_name, Project.find(1))
+    assert_equal 1, items.size
   end
 
   def test_menu_items_for_should_skip_items_that_fail_the_conditions

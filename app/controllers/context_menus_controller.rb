@@ -31,9 +31,7 @@ class ContextMenusController < ApplicationController
 
     @can = {:edit => User.current.allowed_to?(:edit_issues, @projects),
             :log_time => (@project && User.current.allowed_to?(:log_time, @project)),
-            :update => (User.current.allowed_to?(:edit_issues, @projects) || (User.current.allowed_to?(:change_status, @projects) && !@allowed_statuses.blank?)),
-            :move => (@project && User.current.allowed_to?(:move_issues, @project)),
-            :copy => (@issue && @project.trackers.include?(@issue.tracker) && User.current.allowed_to?(:add_issues, @project)),
+            :copy => User.current.allowed_to?(:copy_issues, @projects) && Issue.allowed_target_projects.any?,
             :delete => User.current.allowed_to?(:delete_issues, @projects)
             }
     if @project
@@ -78,9 +76,9 @@ class ContextMenusController < ApplicationController
     @projects = @time_entries.collect(&:project).compact.uniq
     @project = @projects.first if @projects.size == 1
     @activities = TimeEntryActivity.shared.active
-    @can = {:edit   => User.current.allowed_to?(:edit_time_entries, @projects),
-            :delete => User.current.allowed_to?(:edit_time_entries, @projects)
-            }
+
+    edit_allowed = @time_entries.all? {|t| t.editable_by?(User.current)}
+    @can = {:edit => edit_allowed, :delete => edit_allowed}
     @back = back_url
 
     @options_by_custom_field = {}

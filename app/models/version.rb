@@ -22,6 +22,7 @@ class Version < ActiveRecord::Base
   has_many :fixed_issues, :class_name => 'Issue', :foreign_key => 'fixed_version_id', :dependent => :nullify
   acts_as_customizable
   acts_as_attachable :view_permission => :view_files,
+                     :edit_permission => :manage_files,
                      :delete_permission => :manage_files
 
   VERSION_STATUSES = %w(open locked closed)
@@ -30,14 +31,17 @@ class Version < ActiveRecord::Base
   validates_presence_of :name
   validates_uniqueness_of :name, :scope => [:project_id]
   validates_length_of :name, :maximum => 60
+  validates_length_of :description, :maximum => 255
   validates :effective_date, :date => true
   validates_inclusion_of :status, :in => VERSION_STATUSES
   validates_inclusion_of :sharing, :in => VERSION_SHARINGS
+  attr_protected :id
 
   scope :named, lambda {|arg| where("LOWER(#{table_name}.name) = LOWER(?)", arg.to_s.strip)}
   scope :open, lambda { where(:status => 'open') }
   scope :visible, lambda {|*args|
-    includes(:project).where(Project.allowed_to_condition(args.first || User.current, :view_issues))
+    joins(:project).
+    where(Project.allowed_to_condition(args.first || User.current, :view_issues))
   }
 
   safe_attributes 'name',
@@ -123,12 +127,6 @@ class Version < ActiveRecord::Base
     end
   end
 
-  # TODO: remove in Redmine 3.0
-  def completed_pourcent
-    ActiveSupport::Deprecation.warn "Version#completed_pourcent is deprecated and will be removed in Redmine 3.0. Please use #completed_percent instead."
-    completed_percent
-  end
-
   # Returns the percentage of issues that have been marked as 'closed'.
   def closed_percent
     if issues_count == 0
@@ -136,12 +134,6 @@ class Version < ActiveRecord::Base
     else
       issues_progress(false)
     end
-  end
-
-  # TODO: remove in Redmine 3.0
-  def closed_pourcent
-    ActiveSupport::Deprecation.warn "Version#closed_pourcent is deprecated and will be removed in Redmine 3.0. Please use #closed_percent instead."
-    closed_percent
   end
 
   # Returns true if the version is overdue: due date reached and some open issues

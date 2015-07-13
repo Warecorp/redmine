@@ -182,7 +182,7 @@ mk:
   error_no_tracker_in_project: 'No tracker is associated to this project. Please check the Project settings.'
   error_no_default_issue_status: 'No default issue status is defined. Please check your configuration (Go to "Administration -> Issue statuses").'
   error_can_not_delete_custom_field: Unable to delete custom field
-  error_can_not_delete_tracker: "This tracker contains issues and can't be deleted."
+  error_can_not_delete_tracker: "This tracker contains issues and cannot be deleted."
   error_can_not_remove_role: "This role is in use and can not be deleted."
   error_can_not_reopen_issue_on_closed_version: 'An issue assigned to a closed version can not be reopened'
   error_can_not_archive_project: This project can not be archived
@@ -562,7 +562,6 @@ mk:
   label_used_by: Користено од
   label_details: Детали
   label_add_note: Додади белешка
-  label_per_page: По страна
   label_calendar: Календар
   label_months_from: месеци од
   label_gantt: Gantt
@@ -1119,3 +1118,26 @@ mk:
   label_radio_buttons: radio buttons
   label_group_anonymous: Anonymous users
   label_group_non_member: Non member users
+  label_add_projects: Add projects
+  field_default_status: Default status
+  text_subversion_repository_note: 'Examples: file:///, http://, https://, svn://, svn+[tunnelscheme]://'
+  field_users_visibility: Users visibility
+  label_users_visibility_all: All active users
+  label_users_visibility_members_of_visible_projects: Members of visible projects
+  label_edit_attachments: Edit attached files
+  setting_link_copied_issue: Link issues on copy
+  label_link_copied_issue: Link copied issue
+  label_ask: Ask
+  label_search_attachments_yes: Search attachment filenames and descriptions
+  label_search_attachments_no: Do not search attachments
+  label_search_attachments_only: Search attachments only
+  label_search_open_issues_only: Open issues only
+  field_address: Е-пошта
+  setting_max_additional_emails: Maximum number of additional email addresses
+  label_email_address_plural: Emails
+  label_email_address_add: Add email address
+  label_enable_notifications: Enable notifications
+  label_disable_notifications: Disable notifications
+  setting_search_results_per_page: Search results per page
+  label_blank_value: blank
+  permission_copy_issues: Copy issues

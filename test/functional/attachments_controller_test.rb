@@ -40,12 +40,8 @@ class AttachmentsControllerTest < ActionController::TestCase
       assert_response :success
       assert_template 'diff'
       assert_equal 'text/html', @response.content_type
-      assert_tag 'th',
-        :attributes => {:class => /filename/},
-        :content => /issues_controller.rb\t\(révision 1484\)/
-      assert_tag 'td',
-        :attributes => {:class => /line-code/},
-        :content => /Demande créée avec succès/
+      assert_select 'th.filename', :text => /issues_controller.rb\t\(révision 1484\)/
+      assert_select 'td.line-code', :text => /Demande créée avec succès/
     end
     set_tmp_attachments_directory
   end
@@ -58,12 +54,8 @@ class AttachmentsControllerTest < ActionController::TestCase
         assert_response :success
         assert_template 'diff'
         assert_equal 'text/html', @response.content_type
-        assert_tag 'th',
-          :attributes => {:class => "filename"},
-          :content => /issues_controller.rb\t\(r\?vision 1484\)/
-        assert_tag 'td',
-          :attributes => {:class => /line-code/},
-          :content => /Demande cr\?\?e avec succ\?s/
+        assert_select 'th.filename', :text => /issues_controller.rb\t\(r\?vision 1484\)/
+        assert_select 'td.line-code', :text => /Demande cr\?\?e avec succ\?s/
       end
     end
     set_tmp_attachments_directory
@@ -77,12 +69,8 @@ class AttachmentsControllerTest < ActionController::TestCase
         assert_response :success
         assert_template 'diff'
         assert_equal 'text/html', @response.content_type
-        assert_tag 'th',
-          :attributes => {:class => "filename"},
-          :content => /issues_controller.rb\t\(révision 1484\)/
-        assert_tag 'td',
-          :attributes => {:class => /line-code/},
-          :content => /Demande créée avec succès/
+        assert_select 'th.filename', :text => /issues_controller.rb\t\(révision 1484\)/
+        assert_select 'td.line-code', :text => /Demande créée avec succès/
       end
     end
     set_tmp_attachments_directory
@@ -139,17 +127,16 @@ class AttachmentsControllerTest < ActionController::TestCase
     assert a.save
     assert_equal 'japanese-utf-8.txt', a.filename
 
-    str_japanese = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"
-    str_japanese.force_encoding('UTF-8') if str_japanese.respond_to?(:force_encoding)
+    str_japanese = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e".force_encoding('UTF-8')
 
     get :show, :id => a.id
     assert_response :success
     assert_template 'file'
     assert_equal 'text/html', @response.content_type
-    assert_tag :tag => 'th',
-               :content => '1',
-               :attributes => { :class => 'line-num' },
-               :sibling => { :tag => 'td', :content => /#{str_japanese}/ }
+    assert_select 'tr#L1' do
+      assert_select 'th.line-num', :text => '1'
+      assert_select 'td', :text => /#{str_japanese}/
+    end
   end
 
   def test_show_text_file_replace_cannot_convert_content
@@ -165,10 +152,10 @@ class AttachmentsControllerTest < ActionController::TestCase
       assert_response :success
       assert_template 'file'
       assert_equal 'text/html', @response.content_type
-      assert_tag :tag => 'th',
-                 :content => '7',
-                 :attributes => { :class => 'line-num' },
-                 :sibling => { :tag => 'td', :content => /Demande cr\?\?e avec succ\?s/ }
+      assert_select 'tr#L7' do
+        assert_select 'th.line-num', :text => '7'
+        assert_select 'td', :text => /Demande cr\?\?e avec succ\?s/
+      end
     end
   end
 
@@ -185,11 +172,11 @@ class AttachmentsControllerTest < ActionController::TestCase
       assert_response :success
       assert_template 'file'
       assert_equal 'text/html', @response.content_type
-      assert_tag :tag => 'th',
-                 :content => '7',
-                 :attributes => { :class => 'line-num' },
-                 :sibling => { :tag => 'td', :content => /Demande créée avec succès/ }
+      assert_select 'tr#L7' do
+        assert_select 'th.line-num', :text => '7'
+        assert_select 'td', :text => /Demande créée avec succès/
       end
+    end
   end
 
   def test_show_text_file_should_send_if_too_big
@@ -205,7 +192,7 @@ class AttachmentsControllerTest < ActionController::TestCase
   def test_show_other
     get :show, :id => 6
     assert_response :success
-    assert_equal 'application/octet-stream', @response.content_type
+    assert_equal 'application/zip', @response.content_type
     set_tmp_attachments_directory
   end
 
@@ -219,7 +206,7 @@ class AttachmentsControllerTest < ActionController::TestCase
     @request.session[:user_id] = 2
     get :show, :id => 15
     assert_response :success
-    assert_tag 'h2', :content => /private.diff/
+    assert_select 'h2', :text => /private.diff/
     set_tmp_attachments_directory
   end
 
@@ -268,6 +255,15 @@ class AttachmentsControllerTest < ActionController::TestCase
 
   def test_download_should_assign_content_type_if_blank
     Attachment.find(4).update_attribute(:content_type, '')
+
+    get :download, :id => 4
+    assert_response :success
+    assert_equal 'text/x-ruby', @response.content_type
+    set_tmp_attachments_directory
+  end
+
+  def test_download_should_assign_better_content_type_than_application_octet_stream
+    Attachment.find(4).update! :content_type => "application/octet-stream"
 
     get :download, :id => 4
     assert_response :success
@@ -338,6 +334,69 @@ class AttachmentsControllerTest < ActionController::TestCase
     end
   else
     puts '(ImageMagick convert not available)'
+  end
+
+  def test_edit
+    @request.session[:user_id] = 2
+    get :edit, :object_type => 'issues', :object_id => '2'
+    assert_response :success
+    assert_template 'edit'
+
+    container = Issue.find(2)
+    assert_equal container, assigns(:container)
+    assert_equal container.attachments.size, assigns(:attachments).size
+
+    assert_select 'form[action=?]', '/attachments/issues/2' do
+      assert_select 'tr#attachment-4' do
+        assert_select 'input[name=?][value=?]', 'attachments[4][filename]', 'source.rb'
+        assert_select 'input[name=?][value=?]', 'attachments[4][description]', 'This is a Ruby source file'
+      end
+    end
+  end
+
+  def test_edit_invalid_container_class_should_return_404
+    get :edit, :object_type => 'nuggets', :object_id => '3'
+    assert_response 404
+  end
+
+  def test_edit_invalid_object_should_return_404
+    get :edit, :object_type => 'issues', :object_id => '999'
+    assert_response 404
+  end
+
+  def test_edit_for_object_that_is_not_visible_should_return_403
+    get :edit, :object_type => 'issues', :object_id => '4'
+    assert_response 403
+  end
+
+  def test_update
+    @request.session[:user_id] = 2
+    patch :update, :object_type => 'issues', :object_id => '2', :attachments => {
+        '1' => {:filename => 'newname.text', :description => ''},
+        '4' => {:filename => 'newname.rb', :description => 'Renamed'},
+      }
+
+    assert_response 302
+    attachment = Attachment.find(4)
+    assert_equal 'newname.rb', attachment.filename
+    assert_equal 'Renamed', attachment.description
+  end
+
+  def test_update_with_failure
+    @request.session[:user_id] = 2
+    patch :update, :object_type => 'issues', :object_id => '3', :attachments => {
+        '1' => {:filename => '', :description => ''},
+        '4' => {:filename => 'newname.rb', :description => 'Renamed'},
+      }
+
+    assert_response :success
+    assert_template 'edit'
+    assert_select_error /file cannot be blank/i
+
+    # The other attachment should not be updated
+    attachment = Attachment.find(4)
+    assert_equal 'source.rb', attachment.filename
+    assert_equal 'This is a Ruby source file', attachment.description
   end
 
   def test_destroy_issue_attachment

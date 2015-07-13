@@ -61,7 +61,7 @@ module Redmine
       # Returns false if user is not authorized
       def redirect_to_project_menu_item(project, name)
         item = Redmine::MenuManager.items(:project_menu).detect {|i| i.name.to_s == name.to_s}
-        if item && User.current.allowed_to?(item.url, project) && (item.condition.nil? || item.condition.call(project))
+        if item && item.allowed?(User.current, project)
           redirect_to({item.param => project}.merge(item.url))
           return true
         end
@@ -153,17 +153,15 @@ module Redmine
       def render_unattached_menu_item(menu_item, project)
         raise MenuError, ":child_menus must be an array of MenuItems" unless menu_item.is_a? MenuItem
 
-        if User.current.allowed_to?(menu_item.url, project)
-          link_to(h(menu_item.caption),
-                  menu_item.url,
-                  menu_item.html_options)
+        if menu_item.allowed?(User.current, project)
+          link_to(menu_item.caption, menu_item.url, menu_item.html_options)
         end
       end
 
       def menu_items_for(menu, project=nil)
         items = []
         Redmine::MenuManager.items(menu).root.children.each do |node|
-          if allowed_node?(node, User.current, project)
+          if node.allowed?(User.current, project)
             if block_given?
               yield node
             else
@@ -180,7 +178,11 @@ module Redmine
         when Hash
           project.nil? ? item.url : {item.param => project}.merge(item.url)
         when Symbol
-          send(item.url)
+          if project
+            send(item.url, project)
+          else
+            send(item.url)
+          end
         else
           item.url
         end
@@ -188,19 +190,9 @@ module Redmine
         return [caption, url, (current_menu_item == item.name)]
       end
 
-      # Checks if a user is allowed to access the menu item by:
-      #
-      # * Checking the url target (project only)
-      # * Checking the conditions of the item
+      # See MenuItem#allowed?
       def allowed_node?(node, user, project)
-        if project && user && !user.allowed_to?(node.url, project)
-          return false
-        end
-        if node.condition && !node.condition.call(project)
-          # Condition that doesn't pass
-          return false
-        end
-        return true
+        node.allowed?(user, project)
       end
     end
 
@@ -388,9 +380,9 @@ module Redmine
 
     class MenuItem < MenuNode
       include Redmine::I18n
-      attr_reader :name, :url, :param, :condition, :parent, :child_menus, :last
+      attr_reader :name, :url, :param, :condition, :parent, :child_menus, :last, :permission
 
-      def initialize(name, url, options)
+      def initialize(name, url, options={})
         raise ArgumentError, "Invalid option :if for menu item '#{name}'" if options[:if] && !options[:if].respond_to?(:call)
         raise ArgumentError, "Invalid option :html for menu item '#{name}'" if options[:html] && !options[:html].is_a?(Hash)
         raise ArgumentError, "Cannot set the :parent to be the same as this item" if options[:parent] == name.to_sym
@@ -398,6 +390,8 @@ module Redmine
         @name = name
         @url = url
         @condition = options[:if]
+        @permission = options[:permission]
+        @permission ||= false if options.key?(:permission)
         @param = options[:param] || :id
         @caption = options[:caption]
         @html_options = options[:html] || {}
@@ -431,6 +425,29 @@ module Redmine
         else
           @html_options
         end
+      end
+
+      # Checks if a user is allowed to access the menu item by:
+      #
+      # * Checking the permission or the url target (project only)
+      # * Checking the conditions of the item
+      def allowed?(user, project)
+        if user && project
+          if permission
+            unless user.allowed_to?(permission, project)
+              return false
+            end
+          elsif permission.nil? && url.is_a?(Hash)
+            unless user.allowed_to?(url, project)
+              return false
+            end
+          end
+        end
+        if condition && !condition.call(project)
+          # Condition that doesn't pass
+          return false
+        end
+        return true
       end
     end
   end

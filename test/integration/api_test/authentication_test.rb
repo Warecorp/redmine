@@ -20,12 +20,77 @@ require File.expand_path('../../../test_helper', __FILE__)
 class Redmine::ApiTest::AuthenticationTest < Redmine::ApiTest::Base
   fixtures :users
 
-  def setup
-    Setting.rest_api_enabled = '1'
+  def test_api_should_deny_without_credentials
+    get '/users/current.xml', {}
+    assert_response 401
+    assert_equal User.anonymous, User.current
+    assert response.headers.has_key?('WWW-Authenticate')
   end
 
-  def teardown
-    Setting.rest_api_enabled = '0'
+  def test_api_should_accept_http_basic_auth_using_username_and_password
+    user = User.generate! do |user|
+      user.password = 'my_password'
+    end
+    get '/users/current.xml', {}, credentials(user.login, 'my_password')
+    assert_response 200
+    assert_equal user, User.current
+  end
+
+  def test_api_should_deny_http_basic_auth_using_username_and_wrong_password
+    user = User.generate! do |user|
+      user.password = 'my_password'
+    end
+    get '/users/current.xml', {}, credentials(user.login, 'wrong_password')
+    assert_response 401
+    assert_equal User.anonymous, User.current
+  end
+
+  def test_api_should_accept_http_basic_auth_using_api_key
+    user = User.generate!
+    token = Token.create!(:user => user, :action => 'api')
+    get '/users/current.xml', {}, credentials(token.value, 'X')
+    assert_response 200
+    assert_equal user, User.current
+  end
+
+  def test_api_should_deny_http_basic_auth_using_wrong_api_key
+    user = User.generate!
+    token = Token.create!(:user => user, :action => 'feeds') # not the API key
+    get '/users/current.xml', {}, credentials(token.value, 'X')
+    assert_response 401
+    assert_equal User.anonymous, User.current
+  end
+
+  def test_api_should_accept_auth_using_api_key_as_parameter
+    user = User.generate!
+    token = Token.create!(:user => user, :action => 'api')
+    get "/users/current.xml?key=#{token.value}", {}
+    assert_response 200
+    assert_equal user, User.current
+  end
+
+  def test_api_should_deny_auth_using_wrong_api_key_as_parameter
+    user = User.generate!
+    token = Token.create!(:user => user, :action => 'feeds') # not the API key
+    get "/users/current.xml?key=#{token.value}", {}
+    assert_response 401
+    assert_equal User.anonymous, User.current
+  end
+
+  def test_api_should_accept_auth_using_api_key_as_request_header
+    user = User.generate!
+    token = Token.create!(:user => user, :action => 'api')
+    get "/users/current.xml", {}, {'X-Redmine-API-Key' => token.value.to_s}
+    assert_response 200
+    assert_equal user, User.current
+  end
+
+  def test_api_should_deny_auth_using_wrong_api_key_as_request_header
+    user = User.generate!
+    token = Token.create!(:user => user, :action => 'feeds') # not the API key
+    get "/users/current.xml", {}, {'X-Redmine-API-Key' => token.value.to_s}
+    assert_response 401
+    assert_equal User.anonymous, User.current
   end
 
   def test_api_should_trigger_basic_http_auth_with_basic_authorization_header
@@ -41,11 +106,8 @@ class Redmine::ApiTest::AuthenticationTest < Redmine::ApiTest::Base
   end
 
   def test_invalid_utf8_credentials_should_not_trigger_an_error
-    invalid_utf8 = "\x82"
-    if invalid_utf8.respond_to?(:force_encoding)
-      invalid_utf8.force_encoding('UTF-8') 
-      assert !invalid_utf8.valid_encoding?
-    end
+    invalid_utf8 = "\x82".force_encoding('UTF-8')
+    assert !invalid_utf8.valid_encoding?
     assert_nothing_raised do
       get '/users/current.xml', {}, credentials(invalid_utf8, "foo")
     end

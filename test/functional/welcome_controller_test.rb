@@ -21,6 +21,7 @@ class WelcomeControllerTest < ActionController::TestCase
   fixtures :projects, :news, :users, :members
 
   def setup
+    Setting.default_language = 'en'
     User.current = nil
   end
 
@@ -34,28 +35,24 @@ class WelcomeControllerTest < ActionController::TestCase
   end
 
   def test_browser_language
-    Setting.default_language = 'en'
     @request.env['HTTP_ACCEPT_LANGUAGE'] = 'fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'
     get :index
     assert_equal :fr, @controller.current_language
   end
 
   def test_browser_language_alternate
-    Setting.default_language = 'en'
     @request.env['HTTP_ACCEPT_LANGUAGE'] = 'zh-TW'
     get :index
     assert_equal :"zh-TW", @controller.current_language
   end
 
   def test_browser_language_alternate_not_valid
-    Setting.default_language = 'en'
     @request.env['HTTP_ACCEPT_LANGUAGE'] = 'fr-CA'
     get :index
     assert_equal :fr, @controller.current_language
   end
 
   def test_browser_language_should_be_ignored_with_force_default_language_for_anonymous
-    Setting.default_language = 'en'
     @request.env['HTTP_ACCEPT_LANGUAGE'] = 'fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'
     with_settings :force_default_language_for_anonymous => '1' do
       get :index
@@ -64,20 +61,20 @@ class WelcomeControllerTest < ActionController::TestCase
   end
 
   def test_user_language_should_be_used
-    Setting.default_language = 'fi'
     user = User.find(2).update_attribute :language, 'it'
     @request.session[:user_id] = 2
     @request.env['HTTP_ACCEPT_LANGUAGE'] = 'fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'
-    get :index
-    assert_equal :it, @controller.current_language
+    with_settings :default_language => 'fi' do
+      get :index
+      assert_equal :it, @controller.current_language
+    end
   end
 
   def test_user_language_should_be_ignored_if_force_default_language_for_loggedin
-    Setting.default_language = 'fi'
     user = User.find(2).update_attribute :language, 'it'
     @request.session[:user_id] = 2
     @request.env['HTTP_ACCEPT_LANGUAGE'] = 'fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'
-    with_settings :force_default_language_for_loggedin => '1' do
+    with_settings :force_default_language_for_loggedin => '1', :default_language => 'fi' do
       get :index
       assert_equal :fi, @controller.current_language
     end
@@ -97,9 +94,7 @@ class WelcomeControllerTest < ActionController::TestCase
     @request.session[:user_id] = 2
 
     get :index
-    assert_tag 'script',
-      :attributes => {:type => "text/javascript"},
-      :content => %r{warnLeavingUnsaved}
+    assert_select 'script', :text => %r{warnLeavingUnsaved}
   end
 
   def test_warn_on_leaving_unsaved_turn_off
@@ -109,16 +104,14 @@ class WelcomeControllerTest < ActionController::TestCase
     @request.session[:user_id] = 2
 
     get :index
-    assert_no_tag 'script',
-      :attributes => {:type => "text/javascript"},
-      :content => %r{warnLeavingUnsaved}
+    assert_select 'script', :text => %r{warnLeavingUnsaved}, :count => 0
   end
 
   def test_logout_link_should_post
     @request.session[:user_id] = 2
 
     get :index
-    assert_select 'a[href=/logout][data-method=post]', :text => 'Sign out'
+    assert_select 'a[href="/logout"][data-method=post]', :text => 'Sign out'
   end
 
   def test_call_hook_mixed_in
@@ -131,7 +124,7 @@ class WelcomeControllerTest < ActionController::TestCase
 
     get :index
     assert_select "#header select" do
-      assert_select "option", :text => 'Foo &amp; Bar'
+      assert_select "option", :text => 'Foo & Bar'
     end
   end
 

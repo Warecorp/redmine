@@ -37,7 +37,7 @@ class SettingsControllerTest < ActionController::TestCase
     assert_response :success
     assert_template 'edit'
 
-    assert_tag 'input', :attributes => {:name => 'settings[enabled_scm][]', :value => ''}
+    assert_select 'input[name=?][value=""]', 'settings[enabled_scm][]'
   end
 
   def test_get_edit_should_preselect_default_issue_list_columns
@@ -93,19 +93,19 @@ class SettingsControllerTest < ActionController::TestCase
     assert_select 'tr.commit-keywords:nth-child(1)' do
       assert_select 'input[name=?][value=?]', 'settings[commit_update_keywords][keywords][]', 'fixes, resolves'
       assert_select 'select[name=?]', 'settings[commit_update_keywords][status_id][]' do
-        assert_select 'option[value=3][selected=selected]'
+        assert_select 'option[value="3"][selected=selected]'
       end
     end
     assert_select 'tr.commit-keywords:nth-child(2)' do
       assert_select 'input[name=?][value=?]', 'settings[commit_update_keywords][keywords][]', 'closes'
       assert_select 'select[name=?]', 'settings[commit_update_keywords][status_id][]' do
-        assert_select 'option[value=5][selected=selected]', :text => 'Closed'
+        assert_select 'option[value="5"][selected=selected]', :text => 'Closed'
       end
       assert_select 'select[name=?]', 'settings[commit_update_keywords][done_ratio][]' do
-        assert_select 'option[value=100][selected=selected]', :text => '100 %'
+        assert_select 'option[value="100"][selected=selected]', :text => '100 %'
       end
       assert_select 'select[name=?]', 'settings[commit_update_keywords][if_tracker_id][]' do
-        assert_select 'option[value=2][selected=selected]', :text => 'Feature request'
+        assert_select 'option[value="2"][selected=selected]', :text => 'Feature request'
       end
     end
   end
@@ -137,18 +137,18 @@ class SettingsControllerTest < ActionController::TestCase
   end
 
   def test_get_plugin_settings
-    Setting.stubs(:plugin_foo).returns({'sample_setting' => 'Plugin setting value'})
     ActionController::Base.append_view_path(File.join(Rails.root, "test/fixtures/plugins"))
     Redmine::Plugin.register :foo do
       settings :partial => "foo_plugin/foo_plugin_settings"
     end
+    Setting.plugin_foo = {'sample_setting' => 'Plugin setting value'}
 
     get :plugin, :id => 'foo'
     assert_response :success
     assert_template 'plugin'
-    assert_tag 'form', :attributes => {:action => '/settings/plugin/foo'},
-      :descendant => {:tag => 'input', :attributes => {:name => 'settings[sample_setting]', :value => 'Plugin setting value'}}
-
+    assert_select 'form[action="/settings/plugin/foo"]' do
+      assert_select 'input[name=?][value=?]', 'settings[sample_setting]', 'Plugin setting value'
+    end
   ensure
     Redmine::Plugin.unregister(:foo)
   end
@@ -169,13 +169,15 @@ class SettingsControllerTest < ActionController::TestCase
   end
 
   def test_post_plugin_settings
-    Setting.expects(:plugin_foo=).with({'sample_setting' => 'Value'}).returns(true)
     Redmine::Plugin.register(:foo) do
-      settings :partial => 'not blank' # so that configurable? is true
+      settings :partial => 'not blank', # so that configurable? is true
+        :default => {'sample_setting' => 'Plugin setting value'}
     end
 
     post :plugin, :id => 'foo', :settings => {'sample_setting' => 'Value'}
     assert_redirected_to '/settings/plugin/foo'
+
+    assert_equal({'sample_setting' => 'Value'}, Setting.plugin_foo)
   end
 
   def test_post_non_configurable_plugin_settings

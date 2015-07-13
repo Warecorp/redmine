@@ -28,11 +28,12 @@ class Redmine::ApiTest::AttachmentsTest < Redmine::ApiTest::Base
            :attachments
 
   def setup
-    Setting.rest_api_enabled = '1'
+    super
     set_fixtures_attachments_directory
   end
 
   def teardown
+    super
     set_tmp_attachments_directory
   end
 
@@ -40,19 +41,19 @@ class Redmine::ApiTest::AttachmentsTest < Redmine::ApiTest::Base
     get '/attachments/7.xml', {}, credentials('jsmith')
     assert_response :success
     assert_equal 'application/xml', @response.content_type
-    assert_tag :tag => 'attachment',
-      :child => {
-        :tag => 'id',
-        :content => '7',
-        :sibling => {
-          :tag => 'filename',
-          :content => 'archive.zip',
-          :sibling => {
-            :tag => 'content_url',
-            :content => 'http://www.example.com/attachments/download/7/archive.zip'
-          }
-        }
-      }
+    assert_select 'attachment id', :text => '7' do
+      assert_select '~ filename', :text => 'archive.zip'
+      assert_select '~ content_url', :text => 'http://www.example.com/attachments/download/7/archive.zip'
+    end
+  end
+
+  test "GET /attachments/:id.xml for image should include thumbnail_url" do
+    get '/attachments/16.xml', {}, credentials('jsmith')
+    assert_response :success
+    assert_equal 'application/xml', @response.content_type
+    assert_select 'attachment id:contains(16)' do
+      assert_select '~ thumbnail_url', :text => 'http://www.example.com/attachments/thumbnail/16'
+    end
   end
 
   test "GET /attachments/:id.xml should deny access without credentials" do
@@ -64,7 +65,7 @@ class Redmine::ApiTest::AttachmentsTest < Redmine::ApiTest::Base
   test "GET /attachments/download/:id/:filename should return the attachment content" do
     get '/attachments/download/7/archive.zip', {}, credentials('jsmith')
     assert_response :success
-    assert_equal 'application/octet-stream', @response.content_type
+    assert_equal 'application/zip', @response.content_type
     set_tmp_attachments_directory
   end
 
@@ -72,6 +73,12 @@ class Redmine::ApiTest::AttachmentsTest < Redmine::ApiTest::Base
     get '/attachments/download/7/archive.zip'
     assert_response 302
     set_tmp_attachments_directory
+  end
+
+  test "GET /attachments/thumbnail/:id should return the thumbnail" do
+    skip unless convert_installed?
+    get '/attachments/thumbnail/16', {}, credentials('jsmith')
+    assert_response :success
   end
 
   test "POST /uploads.xml should return the token" do
@@ -142,7 +149,7 @@ class Redmine::ApiTest::AttachmentsTest < Redmine::ApiTest::Base
       assert_no_difference 'Attachment.count' do
         post '/uploads.xml', ('x' * 2048), {"CONTENT_TYPE" => 'application/octet-stream'}.merge(credentials('jsmith'))
         assert_response 422
-        assert_tag 'error', :content => /exceeds the maximum allowed file size/
+        assert_select 'error', :text => /exceeds the maximum allowed file size/
       end
     end
   end

@@ -74,6 +74,31 @@ function hideFieldset(el) {
   fieldset.children('div').hide();
 }
 
+// columns selection
+function moveOptions(theSelFrom, theSelTo) {
+  $(theSelFrom).find('option:selected').detach().prop("selected", false).appendTo($(theSelTo));
+}
+
+function moveOptionUp(theSel) {
+  $(theSel).find('option:selected').each(function(){
+    $(this).prev(':not(:selected)').detach().insertAfter($(this));
+  });
+}
+
+function moveOptionTop(theSel) {
+  $(theSel).find('option:selected').detach().prependTo($(theSel));
+}
+
+function moveOptionDown(theSel) {
+  $($(theSel).find('option:selected').get().reverse()).each(function(){
+    $(this).next(':not(:selected)').detach().insertBefore($(this));
+  });
+}
+
+function moveOptionBottom(theSel) {
+  $(theSel).find('option:selected').detach().appendTo($(theSel));
+}
+
 function initFilters() {
   $('#add_filter_select').change(function() {
     addFilter($(this).val(), '', []);
@@ -88,7 +113,7 @@ function initFilters() {
     toggleMultiSelect($(this).siblings('select'));
   });
   $('#filters-table').on('keypress', 'input[type=text]', function(e) {
-    if (e.keyCode == 13) submit_query_form("query_form");
+    if (e.keyCode == 13) $(this).closest('form').submit();
   });
 }
 
@@ -102,7 +127,7 @@ function addFilter(field, operator, values) {
   }
   $('#cb_'+fieldId).prop('checked', true);
   toggleFilter(field);
-  $('#add_filter_select').val('').children('option').each(function() {
+  $('#add_filter_select').val('').find('option').each(function() {
     if ($(this).attr('value') == field) {
       $(this).attr('disabled', true);
     }
@@ -288,11 +313,6 @@ function toggleMultiSelect(el) {
   }
 }
 
-function submit_query_form(id) {
-  selectAllOptions("selected_columns");
-  $('#'+id).submit();
-}
-
 function showTab(name, url) {
   $('div#content .tab-content').hide();
   $('div.tabs a').removeClass('selected');
@@ -358,10 +378,10 @@ function setPredecessorFieldsVisibility() {
   }
 }
 
-function showModal(id, width) {
+function showModal(id, width, title) {
   var el = $('#'+id).first();
   if (el.length === 0 || el.is(':visible')) {return;}
-  var title = el.find('h3.title').text();
+  if (!title) title = el.find('h3.title').text();
   el.dialog({
     width: width,
     modal: true,
@@ -520,6 +540,23 @@ function observeSearchfield(fieldId, targetId, url) {
   });
 }
 
+function beforeShowDatePicker(input, inst) {
+  var default_date = null;
+  switch ($(input).attr("id")) {
+    case "issue_start_date" :
+      if ($("#issue_due_date").size() > 0) {
+        default_date = $("#issue_due_date").val();
+      }
+      break;
+    case "issue_due_date" :
+      if ($("#issue_start_date").size() > 0) {
+        default_date = $("#issue_start_date").val();
+      }
+      break;
+  }
+  $(input).datepicker("option", "defaultDate", default_date);
+}
+
 function initMyPageSortable(list, url) {
   $('#list-'+list).sortable({
     connectWith: '.block-receiver',
@@ -585,7 +622,7 @@ function addFormObserversForDoubleSubmit() {
 }
 
 function defaultFocus(){
-  if ($('#content :focus').length == 0) {
+  if (($('#content :focus').length == 0) && (window.location.hash == '')) {
     $('#content input[type=text], #content textarea').first().focus();
   }
 }

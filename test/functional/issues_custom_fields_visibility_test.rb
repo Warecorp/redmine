@@ -20,7 +20,7 @@ require File.expand_path('../../test_helper', __FILE__)
 class IssuesCustomFieldsVisibilityTest < ActionController::TestCase
   tests IssuesController
   fixtures :projects,
-           :users,
+           :users, :email_addresses,
            :roles,
            :members,
            :member_roles,
@@ -83,9 +83,9 @@ class IssuesCustomFieldsVisibilityTest < ActionController::TestCase
       end
       @fields.each_with_index do |field, i|
         if fields.include?(field)
-          assert_select "custom_field[id=#{field.id}] value", {:text => "Value#{i}", :count => 1}, "User #{user.id} was not able to view #{field.name} in API"
+          assert_select "custom_field[id=?] value", field.id.to_s, {:text => "Value#{i}", :count => 1}, "User #{user.id} was not able to view #{field.name} in API"
         else
-          assert_select "custom_field[id=#{field.id}] value", {:text => "Value#{i}", :count => 0}, "User #{user.id} was not able to view #{field.name} in API"
+          assert_select "custom_field[id=?] value", field.id.to_s, {:text => "Value#{i}", :count => 0}, "User #{user.id} was not able to view #{field.name} in API"
         end
       end
     end
@@ -199,8 +199,8 @@ class IssuesCustomFieldsVisibilityTest < ActionController::TestCase
     p1 = Project.generate!
     p2 = Project.generate!
     user = User.generate!
-    User.add_to_project(user, p1, Role.where(:id => [1, 3]).all)
-    User.add_to_project(user, p2, Role.where(:id => 3).all)
+    User.add_to_project(user, p1, Role.where(:id => [1, 3]).to_a)
+    User.add_to_project(user, p2, Role.where(:id => 3).to_a)
     Issue.generate!(:project => p1, :tracker_id => 1, :custom_field_values => {@field2.id => 'ValueA'})
     Issue.generate!(:project => p2, :tracker_id => 1, :custom_field_values => {@field2.id => 'ValueB'})
     Issue.generate!(:project => p1, :tracker_id => 1, :custom_field_values => {@field2.id => 'ValueC'})

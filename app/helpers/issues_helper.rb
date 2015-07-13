@@ -19,6 +19,7 @@
 
 module IssuesHelper
   include ApplicationHelper
+  include Redmine::Export::PDF::IssuesPdfHelper
 
   def issue_list(issues, &block)
     ancestors = []
@@ -28,6 +29,24 @@ module IssuesHelper
       end
       yield issue, ancestors.size
       ancestors << issue unless issue.leaf?
+    end
+  end
+
+  def grouped_issue_list(issues, query, issue_count_by_group, &block)
+    previous_group, first = false, true
+    issue_list(issues) do |issue, level|
+      group_name = group_count = nil
+      if query.grouped? && ((group = query.group_by_column.value(issue)) != previous_group || first)
+        if group.blank? && group != false
+          group_name = "(#{l(:label_blank_value)})"
+        else
+          group_name = column_content(query.group_by_column, issue)
+        end
+        group_name ||= ""
+        group_count = issue_count_by_group[group]
+      end
+      yield issue, level, group_name, group_count
+      previous_group, first = group, false
     end
   end
 
@@ -63,7 +82,7 @@ module IssuesHelper
 
   def render_issue_subject_with_tree(issue)
     s = ''
-    ancestors = issue.root? ? [] : issue.ancestors.visible.all
+    ancestors = issue.root? ? [] : issue.ancestors.visible.to_a
     ancestors.each do |ancestor|
       s << '<div>' + content_tag('p', link_to_issue(ancestor, :project => (issue.project_id != ancestor.project_id)))
     end
@@ -79,12 +98,12 @@ module IssuesHelper
 
   def render_descendants_tree(issue)
     s = '<form><table class="list issues">'
-    issue_list(issue.descendants.visible.sort_by(&:lft)) do |child, level|
+    issue_list(issue.descendants.visible.preload(:status, :priority, :tracker).sort_by(&:lft)) do |child, level|
       css = "issue issue-#{child.id} hascontextmenu"
       css << " idnt idnt-#{level}" if level > 0
       s << content_tag('tr',
              content_tag('td', check_box_tag("ids[]", child.id, false, :id => nil), :class => 'checkbox') +
-             content_tag('td', link_to_issue(child, :truncate => 60, :project => (issue.project_id != child.project_id)), :class => 'subject') +
+             content_tag('td', link_to_issue(child, :project => (issue.project_id != child.project_id)), :class => 'subject', :style => 'width: 50%') +
              content_tag('td', h(child.status)) +
              content_tag('td', link_to_user(child.assigned_to)) +
              content_tag('td', progress_bar(child.done_ratio, :width => '80px')),
@@ -180,22 +199,47 @@ module IssuesHelper
     s.html_safe
   end
 
+  # Returns the path for updating the issue form
+  # with project as the current project
+  def update_issue_form_path(project, issue)
+    options = {:format => 'js'}
+    if issue.new_record?
+      if project
+        new_project_issue_path(project, options)
+      else
+        new_issue_path(options)
+      end
+    else
+      edit_issue_path(issue, options)
+    end
+  end
+
+  # Returns the number of descendants for an array of issues
+  def issues_descendant_count(issues)
+    ids = issues.reject(&:leaf?).map {|issue| issue.descendants.ids}.flatten.uniq
+    ids -= issues.map(&:id)
+    ids.size
+  end
+
   def issues_destroy_confirmation_message(issues)
     issues = [issues] unless issues.is_a?(Array)
     message = l(:text_issues_destroy_confirmation)
-    descendant_count = issues.inject(0) {|memo, i| memo += (i.right - i.left - 1)/2}
+
+		descendant_count = issues_descendant_count(issues)
     if descendant_count > 0
-      issues.each do |issue|
-        next if issue.root?
-        issues.each do |other_issue|
-          descendant_count -= 1 if issue.is_descendant_of?(other_issue)
-        end
-      end
-      if descendant_count > 0
-        message << "\n" + l(:text_issues_destroy_descendants_confirmation, :count => descendant_count)
-      end
+      message << "\n" + l(:text_issues_destroy_descendants_confirmation, :count => descendant_count)
     end
     message
+  end
+
+  # Returns an array of users that are proposed as watchers
+  # on the new issue form
+  def users_for_new_issue_watchers(issue)
+    users = issue.watcher_users
+    if issue.project.users.count <= 20
+      users = (users + issue.project.users.sort).uniq
+    end
+    users
   end
 
   def sidebar_queries
@@ -204,7 +248,7 @@ module IssuesHelper
         order("#{Query.table_name}.name ASC").
         # Project specific queries and global queries
         where(@project.nil? ? ["project_id IS NULL"] : ["project_id IS NULL OR project_id = ?", @project.id]).
-        all
+        to_a
     end
     @sidebar_queries
   end
@@ -276,15 +320,19 @@ module IssuesHelper
       end
       strings << show_detail(detail, no_html, options)
     end
-    values_by_field.each do |field, changes|
-      detail = JournalDetail.new(:property => 'cf', :prop_key => field.id.to_s)
-      detail.instance_variable_set "@custom_field", field
-      if changes[:added].any?
-        detail.value = changes[:added]
-        strings << show_detail(detail, no_html, options)
-      elsif changes[:deleted].any?
-        detail.old_value = changes[:deleted]
-        strings << show_detail(detail, no_html, options)
+    if values_by_field.present?
+      multiple_values_detail = Struct.new(:property, :prop_key, :custom_field, :old_value, :value)
+      values_by_field.each do |field, changes|
+        if changes[:added].any?
+          detail = multiple_values_detail.new('cf', field.id.to_s, field)
+          detail.value = changes[:added]
+          strings << show_detail(detail, no_html, options)
+        end
+        if changes[:deleted].any?
+          detail = multiple_values_detail.new('cf', field.id.to_s, field)
+          detail.old_value = changes[:deleted]
+          strings << show_detail(detail, no_html, options)
+        end
       end
     end
     strings
@@ -293,6 +341,8 @@ module IssuesHelper
   # Returns the textual representation of a single journal detail
   def show_detail(detail, no_html=false, options={})
     multiple = false
+    show_diff = false
+
     case detail.property
     when 'attr'
       field = detail.prop_key.to_s.gsub(/\_id$/, "")
@@ -319,14 +369,21 @@ module IssuesHelper
       when 'is_private'
         value = l(detail.value == "0" ? :general_text_No : :general_text_Yes) unless detail.value.blank?
         old_value = l(detail.old_value == "0" ? :general_text_No : :general_text_Yes) unless detail.old_value.blank?
+
+      when 'description'
+        show_diff = true
       end
     when 'cf'
       custom_field = detail.custom_field
       if custom_field
-        multiple = custom_field.multiple?
         label = custom_field.name
-        value = format_value(detail.value, custom_field) if detail.value
-        old_value = format_value(detail.old_value, custom_field) if detail.old_value
+        if custom_field.format.class.change_as_diff
+          show_diff = true
+        else
+          multiple = custom_field.multiple?
+          value = format_value(detail.value, custom_field) if detail.value
+          old_value = format_value(detail.old_value, custom_field) if detail.old_value
+        end
       end
     when 'attachment'
       label = l(:label_attachment)
@@ -356,7 +413,8 @@ module IssuesHelper
       if detail.old_value && detail.value.blank? && detail.property != 'relation'
         old_value = content_tag("del", old_value)
       end
-      if detail.property == 'attachment' && !value.blank? && atta = Attachment.find_by_id(detail.prop_key)
+      if detail.property == 'attachment' && value.present? &&
+          atta = detail.journal.journalized.attachments.detect {|a| a.id == detail.prop_key.to_i}
         # Link to the attachment if it has not been removed
         value = link_to_attachment(atta, :download => true, :only_path => options[:only_path])
         if options[:only_path] != false && atta.is_text?
@@ -371,7 +429,7 @@ module IssuesHelper
       end
     end
 
-    if detail.property == 'attr' && detail.prop_key == 'description'
+    if show_diff
       s = l(:text_journal_changed_no_detail, :label => label)
       unless no_html
         diff_link = link_to 'diff',
@@ -404,14 +462,18 @@ module IssuesHelper
     unless id.present?
       return nil
     end
-    association = Issue.reflect_on_association(field.to_sym)
-    if association
-      record = association.class_name.constantize.find_by_id(id)
-      if record
-        record.name.force_encoding('UTF-8') if record.name.respond_to?(:force_encoding)
-        return record.name
+    @detail_value_name_by_reflection ||= Hash.new do |hash, key|
+      association = Issue.reflect_on_association(key.first.to_sym)
+      name = nil
+      if association
+        record = association.klass.find_by_id(key.last)
+        if record
+          name = record.name.force_encoding('UTF-8')
+        end
       end
+      hash[key] = name
     end
+    @detail_value_name_by_reflection[[field, id]]
   end
 
   # Renders issue children recursively

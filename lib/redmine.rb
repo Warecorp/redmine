@@ -63,12 +63,7 @@ require 'redmine/themes'
 require 'redmine/hook'
 require 'redmine/plugin'
 
-if RUBY_VERSION < '1.9'
-  require 'fastercsv'
-else
-  require 'csv'
-  FCSV = CSV
-end
+require 'csv'
 
 Redmine::Scm::Base.add "Subversion"
 Redmine::Scm::Base.add "Darcs"
@@ -87,7 +82,7 @@ Redmine::AccessControl.map do |map|
   map.permission :close_project, {:projects => [:close, :reopen]}, :require => :member, :read => true
   map.permission :select_project_modules, {:projects => :modules}, :require => :member
   map.permission :view_members, {:members => [:index, :show]}, :public => true, :read => true
-  map.permission :manage_members, {:projects => :settings, :members => [:index, :show, :create, :update, :destroy, :autocomplete]}, :require => :member
+  map.permission :manage_members, {:projects => :settings, :members => [:index, :show, :new, :create, :update, :destroy, :autocomplete]}, :require => :member
   map.permission :manage_versions, {:projects => :settings, :versions => [:new, :create, :edit, :update, :close_completed, :destroy]}, :require => :member
   map.permission :add_subprojects, {:projects => [:new, :create]}, :require => :member
 
@@ -103,18 +98,18 @@ Redmine::AccessControl.map do |map|
                                   :queries => :index,
                                   :reports => [:issue_report, :issue_report_details]},
                                   :read => true
-    map.permission :add_issues, {:issues => [:new, :create, :update_form], :attachments => :upload}
-    map.permission :edit_issues, {:issues => [:edit, :update, :bulk_edit, :bulk_update, :update_form], :journals => [:new], :attachments => :upload}
+    map.permission :add_issues, {:issues => [:new, :create], :attachments => :upload}
+    map.permission :edit_issues, {:issues => [:edit, :update, :bulk_edit, :bulk_update], :journals => [:new], :attachments => :upload}
+    map.permission :copy_issues, {:issues => [:new, :create, :bulk_edit, :bulk_update], :attachments => :upload}
     map.permission :manage_issue_relations, {:issue_relations => [:index, :show, :create, :destroy]}
     map.permission :manage_subtasks, {}
     map.permission :set_issues_private, {}
     map.permission :set_own_issues_private, {}, :require => :loggedin
-    map.permission :add_issue_notes, {:issues => [:edit, :update, :update_form], :journals => [:new], :attachments => :upload}
+    map.permission :add_issue_notes, {:issues => [:edit, :update], :journals => [:new], :attachments => :upload}
     map.permission :edit_issue_notes, {:journals => :edit}, :require => :loggedin
     map.permission :edit_own_issue_notes, {:journals => :edit}, :require => :loggedin
     map.permission :view_private_notes, {}, :read => true, :require => :member
     map.permission :set_notes_private, {}, :require => :member
-    map.permission :move_issues, {:issues => [:bulk_edit, :bulk_update]}, :require => :loggedin
     map.permission :delete_issues, {:issues => :destroy}, :require => :member
     # Queries
     map.permission :manage_public_queries, {:queries => [:new, :create, :edit, :update, :destroy]}, :require => :member
@@ -235,7 +230,8 @@ Redmine::MenuManager.map :project_menu do |menu|
               :if => Proc.new { |p| p.shared_versions.any? }
   menu.push :issues, { :controller => 'issues', :action => 'index' }, :param => :project_id, :caption => :label_issue_plural
   menu.push :new_issue, { :controller => 'issues', :action => 'new', :copy_from => nil }, :param => :project_id, :caption => :label_issue_new,
-              :html => { :accesskey => Redmine::AccessKeys.key_for(:new_issue) }
+              :html => { :accesskey => Redmine::AccessKeys.key_for(:new_issue) },
+              :if => Proc.new { |p| p.trackers.any? }
   menu.push :gantt, { :controller => 'gantts', :action => 'show' }, :param => :project_id, :caption => :label_gantt
   menu.push :calendar, { :controller => 'calendars', :action => 'show' }, :param => :project_id, :caption => :label_calendar
   menu.push :news, { :controller => 'news', :action => 'index' }, :param => :project_id, :caption => :label_news_plural

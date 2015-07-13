@@ -29,6 +29,7 @@ class CustomField < ActiveRecord::Base
   validates_length_of :name, :maximum => 30
   validates_inclusion_of :field_format, :in => Proc.new { Redmine::FieldFormat.available_formats }
   validate :validate_custom_field
+  attr_protected :id
 
   before_validation :set_searchable
   before_save do |field|
@@ -41,7 +42,7 @@ class CustomField < ActiveRecord::Base
     end
   end
 
-  scope :sorted, lambda { order("#{table_name}.position ASC") }
+  scope :sorted, lambda { order(:position) }
   scope :visible, lambda {|*args|
     user = args.shift || User.current
     if user.admin?
@@ -117,7 +118,7 @@ class CustomField < ActiveRecord::Base
     values = read_attribute(:possible_values)
     if values.is_a?(Array)
       values.each do |value|
-        value.force_encoding('UTF-8') if value.respond_to?(:force_encoding)
+        value.to_s.force_encoding('UTF-8')
       end
       values
     else
@@ -128,7 +129,7 @@ class CustomField < ActiveRecord::Base
   # Makes possible_values accept a multiline string
   def possible_values=(arg)
     if arg.is_a?(Array)
-      values = arg.compact.collect(&:strip).select {|v| !v.blank?}
+      values = arg.compact.map {|a| a.to_s.strip}.reject(&:blank?)
       write_attribute(:possible_values, values)
     else
       self.possible_values = arg.to_s.split(/[\n\r]+/)
@@ -218,7 +219,7 @@ class CustomField < ActiveRecord::Base
 
   # to move in project_custom_field
   def self.for_all
-    where(:is_for_all => true).order('position').all
+    where(:is_for_all => true).order('position').to_a
   end
 
   def type_name
@@ -248,7 +249,7 @@ class CustomField < ActiveRecord::Base
 
   # Returns the error messages for the default custom field value
   def validate_field_value(value)
-    validate_custom_value(CustomValue.new(:custom_field => self, :value => value))
+    validate_custom_value(CustomFieldValue.new(:custom_field => self, :value => value))
   end
 
   # Returns true if value is a valid value for the custom field

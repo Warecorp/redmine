@@ -136,7 +136,7 @@ sl:
   general_text_Yes: 'Da'
   general_text_no: 'ne'
   general_text_yes: 'da'
-  general_lang_name: 'Slovenščina'
+  general_lang_name: 'Slovene (Slovenščina)'
   general_csv_separator: ','
   general_csv_decimal_separator: '.'
   general_csv_encoding: UTF-8
@@ -503,7 +503,6 @@ sl:
   label_used_by: V uporabi od
   label_details: Podrobnosti
   label_add_note: Dodaj zabeležko
-  label_per_page: Na stran
   label_calendar: Koledar
   label_months_from: mesecev od
   label_gantt: Gantogram
@@ -1119,3 +1118,26 @@ sl:
   label_radio_buttons: radio buttons
   label_group_anonymous: Anonymous users
   label_group_non_member: Non member users
+  label_add_projects: Add projects
+  field_default_status: Default status
+  text_subversion_repository_note: 'Examples: file:///, http://, https://, svn://, svn+[tunnelscheme]://'
+  field_users_visibility: Users visibility
+  label_users_visibility_all: All active users
+  label_users_visibility_members_of_visible_projects: Members of visible projects
+  label_edit_attachments: Edit attached files
+  setting_link_copied_issue: Link issues on copy
+  label_link_copied_issue: Link copied issue
+  label_ask: Ask
+  label_search_attachments_yes: Search attachment filenames and descriptions
+  label_search_attachments_no: Do not search attachments
+  label_search_attachments_only: Search attachments only
+  label_search_open_issues_only: Open issues only
+  field_address: E-naslov
+  setting_max_additional_emails: Maximum number of additional email addresses
+  label_email_address_plural: Emails
+  label_email_address_add: Add email address
+  label_enable_notifications: Enable notifications
+  label_disable_notifications: Disable notifications
+  setting_search_results_per_page: Search results per page
+  label_blank_value: blank
+  permission_copy_issues: Copy issues
