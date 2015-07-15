@@ -1,0 +1,122 @@
+# config valid only for Capistrano 3.1
+lock '3.3.5'
+
+application = 'redmine'
+deploy_dir  = "/home/redmine/#{application}"
+
+set :application, application
+set :scm, :git
+set :repo_url, 'git@github.com:Warecorp/redmine.git'
+set :branch, fetch(:revision) || ENV['branch'] || :develop
+set :deploy_to, deploy_dir
+set :pty, true
+
+set :whenever_roles,        ->{ :app }
+set :whenever_command,      ->{ [:bundle, :exec, :whenever] }
+set :whenever_command_environment_variables, ->{ {} }
+set :whenever_identifier,   ->{ fetch :application }
+set :whenever_environment,  ->{ fetch(:stage) }
+set :whenever_variables,    ->{ "environment=#{fetch :whenever_environment}" }
+set :whenever_update_flags, ->{ "--update-crontab #{fetch :whenever_identifier} --set #{fetch :whenever_variables}" }
+set :whenever_clear_flags,  ->{ "--clear-crontab #{fetch :whenever_identifier}" }
+
+namespace :deploy do
+
+  desc 'Setup'
+  task :setup do
+    on roles(:all) do
+      execute "mkdir -p #{shared_path}/config/"
+      execute "mkdir -p #{deploy_dir}/run/"
+      execute "mkdir -p #{deploy_dir}/log/"
+      execute "mkdir -p #{deploy_dir}/socket/"
+      execute "mkdir -p #{shared_path}/system"
+
+      upload! "config/deploy/files/#{fetch(:stage)}/database.yml", "#{shared_path}/config/database.yml"
+      upload! "config/deploy/files/#{fetch(:stage)}/trackmine.yml", "#{shared_path}/config/trackmine.yml"
+
+    end
+  end
+
+  desc 'Create symlink'
+  task :symlink do
+    on roles(:all) do
+      execute "ln -s #{shared_path}/config/database.yml #{release_path}/config/database.yml"
+      execute "ln -s #{shared_path}/config/trackmine.yml #{release_path}/config/trackmine.yml"
+    end
+  end
+
+  desc 'Restart application'
+  task :restart do
+    on roles(:app), in: :sequence, wait: 5 do
+      execute "sudo service unicorn restart"
+    end
+  end
+
+  # desc 'DB dump'
+  # task :db_dump do
+  #   on roles(:db) do
+  #     puts "\n\tCreate db dump"
+  #     if fetch(:rails_env) == 'production'
+  #       execute "pg_dump intranet_prod > ~/db_archive/#{Time.now.to_i.to_s}_intranet_prod.sql", shell: "/bin/bash"
+  #       puts "\n\t\tCreated db dump."
+  #     end
+  #   end
+  # end
+
+  after :finishing, 'deploy:cleanup'
+  after :finishing, 'deploy:restart'
+  after :updating,  'deploy:symlink'
+#  after 'deploy:symlink', 'bundler:install'
+#  after 'bundler:install', 'deploy:create_deplayed_job'
+#  before 'deploy:start_delayed_jobs', 'deploy:add_delayed_jobs'
+ # after :finishing, 'deploy:start_delayed_jobs'
+
+  #after 'deploy:stop_delayed_jobs', 'deploy:clear_delayed_jobs'
+  # before :updating, 'deploy:stop_delayed_jobs'
+  # before :setup,    'deploy:starting'
+  # before :updating, 'deploy:db_dump'
+  before :setup,    'deploy:updating'
+  # before :setup,    'bundler:install'
+
+  after :publishing, :restart
+
+  after :restart, :clear_cache do
+    on roles(:web), in: :groups, limit: 3, wait: 10 do
+      # within release_path do
+      #   execute :rake, 'cache:clear'
+      # end
+    end
+  end
+
+end
+
+namespace :whenever do
+  def setup_whenever_task(*args, &block)
+    args = Array(fetch(:whenever_command)) + args
+
+    on roles fetch(:whenever_roles) do |host|
+      host_args = Array(yield(host))
+      within release_path do
+        with fetch(:whenever_command_environment_variables) do
+          execute *(args + host_args)
+        end
+      end
+    end
+  end
+
+  desc "Update application's crontab entries using Whenever"
+  task :update_crontab do
+    setup_whenever_task do |host|
+      roles = host.roles_array.join(",")
+      [fetch(:whenever_update_flags),  "--roles=#{roles}", "RAILS_ENV=#{fetch(:stage)}"]
+    end
+  end
+
+  desc "Clear application's crontab entries using Whenever"
+  task :clear_crontab do
+    setup_whenever_task(fetch(:whenever_clear_flags))
+  end
+
+  after "deploy:updated",  "whenever:update_crontab"
+  after "deploy:reverted", "whenever:update_crontab"
+end
