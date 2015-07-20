@@ -31,6 +31,7 @@ namespace :deploy do
       ['database.yml', 'trackmine.yml', 'unicorn.rb'].each do |file|
         execute "ln -s #{shared_path}/config/#{file} #{release_path}/config/#{file}"
       end
+      execute "ln -s #{shared_path}/config/secret_token.rb #{release_path}/config/initializers/secret_token.rb"
     end
   end
 
