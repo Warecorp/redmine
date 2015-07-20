@@ -15,9 +15,9 @@ namespace :deploy do
   task :setup do
     on roles(:all) do
       execute "mkdir -p #{shared_path}/config/"
-      execute "mkdir -p #{deploy_dir}/run/"
-      execute "mkdir -p #{deploy_dir}/log/"
-      execute "mkdir -p #{deploy_dir}/socket/"
+      execute "mkdir -p #{shared_path}/run/"
+      execute "mkdir -p #{shared_path}/log/"
+      execute "mkdir -p #{shared_path}/socket/"
       execute "mkdir -p #{shared_path}/system"
 
       upload! "config/deploy/files/#{fetch(:stage)}/database.yml", "#{shared_path}/config/database.yml"
@@ -31,6 +31,7 @@ namespace :deploy do
     on roles(:all) do
       execute "ln -s #{shared_path}/config/database.yml #{release_path}/config/database.yml"
       execute "ln -s #{shared_path}/config/trackmine.yml #{release_path}/config/trackmine.yml"
+      execute "ln -s #{shared_path}/config/unicorn.rb #{release_path}/config/unicorn.rb"
     end
   end
 
