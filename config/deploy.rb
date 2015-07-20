@@ -1,10 +1,8 @@
 # config valid only for Capistrano 3.1
 lock '3.3.5'
 
-application = 'redmine'
-deploy_dir  = "/home/redmine/#{application}"
+deploy_dir  = "/home/redmine/app"
 
-set :application, application
 set :scm, :git
 set :repo_url, 'git@github.com:Warecorp/redmine.git'
 set :branch, fetch(:revision) || ENV['branch'] || :develop
