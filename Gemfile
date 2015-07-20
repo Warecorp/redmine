@@ -96,6 +96,7 @@ group :development do
   gem 'capistrano-rails', '~> 1.1.2'
   gem "capistrano-rvm", "~> 0.1.1"
   gem 'capistrano-bundler', '~> 1.1.3'
+  gem 'capistrano-git-submodule-strategy', '~> 0.1.17'
 end
 
 group :test do
