@@ -40,7 +40,6 @@
 .rvmrc
 
 /.bundle
-/Gemfile.lock
 /Gemfile.local
 
 /config/newrelic.yml
