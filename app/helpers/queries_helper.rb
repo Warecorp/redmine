@@ -41,7 +41,7 @@ module QueriesHelper
       end
     end
     # Don't group dates if there's only one (eg. time entries filters)
-    if grouped[:label_date].try(:size) == 1 
+    if grouped[:label_date].try(:size) == 1
       ungrouped << grouped.delete(:label_date).first
     end
     s = options_for_select([[]] + ungrouped)
@@ -111,7 +111,7 @@ module QueriesHelper
       column_value(column, issue, value)
     end
   end
-  
+
   def column_value(column, issue, value)
     case column.name
     when :id
@@ -125,7 +125,6 @@ module QueriesHelper
     when :done_ratio
       progress_bar(value, :width => '80px')
     when :relations
-      other = value.other_issue(issue)
       content_tag('span',
         value.to_s(issue) {|other| link_to_issue(other, :subject => false, :tracker => false)}.html_safe,
         :class => value.css_classes_for(issue))

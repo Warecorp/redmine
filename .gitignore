@@ -4,6 +4,8 @@
 /.rvmrc
 /config/additional_environment.rb
 /config/configuration.yml
+/config/deploy/files/*
+/config/files/*
 /config/database.yml
 /config/email.yml
 /config/secrets.yml
@@ -38,7 +40,6 @@
 .rvmrc
 
 /.bundle
-/Gemfile.lock
 /Gemfile.local
 
 /config/newrelic.yml
