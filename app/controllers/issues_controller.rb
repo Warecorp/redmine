@@ -21,7 +21,6 @@ class IssuesController < ApplicationController
 
   before_filter :find_issue, :only => [:show, :edit, :update]
   before_filter :find_issues, :only => [:bulk_edit, :bulk_update, :destroy]
-  before_filter :find_project, :only => [:new, :create]
   before_filter :authorize, :except => [:index, :new, :create]
   before_filter :find_optional_project, :only => [:index, :new, :create]
   before_filter :build_new_issue_from_params, :only => [:new, :create]
@@ -354,12 +353,15 @@ class IssuesController < ApplicationController
 
   private
 
-  def find_project
+  def find_optional_project
     project_id = params[:project_id] || (params[:issue] && params[:issue][:project_id])
-    @project = Project.find(project_id)
+    @project = Project.find(project_id) unless project_id.blank?
+    allowed = User.current.allowed_to?({:controller => params[:controller], :action => params[:action]}, @project, :global => true)
+    allowed ? true : deny_access
   rescue ActiveRecord::RecordNotFound
     render_404
   end
+
 
   def retrieve_previous_and_next_issue_ids
     retrieve_query_from_session
