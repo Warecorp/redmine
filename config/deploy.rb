@@ -19,7 +19,7 @@ namespace :deploy do
         execute "mkdir -p #{shared_path}/#{shared_dir}/"
       end
 
-      ['database.yml', 'trackmine.yml'].each do |file|
+      ['database.yml', 'trackmine.yml', 'configuration.yml'].each do |file|
         upload! "config/deploy/files/#{fetch(:stage)}/#{file}", "#{shared_path}/config/#{file}"
       end
     end
@@ -28,7 +28,7 @@ namespace :deploy do
   desc 'Create symlink'
   task :symlink do
     on roles(:all) do
-      ['database.yml', 'trackmine.yml', 'unicorn.rb'].each do |file|
+      ['database.yml', 'trackmine.yml', 'configuration.yml', 'unicorn.rb'].each do |file|
         execute "ln -s #{shared_path}/config/#{file} #{release_path}/config/#{file}"
       end
       execute "ln -s #{shared_path}/config/secret_token.rb #{release_path}/config/initializers/secret_token.rb"
