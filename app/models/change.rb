@@ -21,10 +21,7 @@ class Change < ActiveRecord::Base
   validates_presence_of :changeset_id, :action, :path
   before_save :init_path
   before_validation :replace_invalid_utf8_of_path
-
-  def relative_path
-    changeset.repository.relative_path(path)
-  end
+  attr_protected :id
 
   def replace_invalid_utf8_of_path
     self.path      = Redmine::CodesetUtil.replace_invalid_utf8(self.path)

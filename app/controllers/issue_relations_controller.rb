@@ -16,8 +16,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class IssueRelationsController < ApplicationController
-  before_filter :find_issue, :find_project_from_association, :authorize, :only => [:index, :create]
-  before_filter :find_relation, :except => [:index, :create]
+  before_filter :find_issue, :authorize, :only => [:index, :create]
+  before_filter :find_relation, :only => [:show, :destroy]
 
   accept_api_auth :index, :show, :create, :destroy
 
@@ -45,6 +45,7 @@ class IssueRelationsController < ApplicationController
     if params[:relation] && m = params[:relation][:issue_to_id].to_s.strip.match(/^#?(\d+)$/)
       @relation.issue_to = Issue.visible.find_by_id(m[1].to_i)
     end
+    @relation.init_journals(User.current)
     saved = @relation.save
 
     respond_to do |format|
@@ -64,6 +65,7 @@ class IssueRelationsController < ApplicationController
 
   def destroy
     raise Unauthorized unless @relation.deletable?
+    @relation.init_journals(User.current)
     @relation.destroy
 
     respond_to do |format|
@@ -73,9 +75,11 @@ class IssueRelationsController < ApplicationController
     end
   end
 
-private
+  private
+
   def find_issue
-    @issue = @object = Issue.find(params[:issue_id])
+    @issue = Issue.find(params[:issue_id])
+    @project = @issue.project
   rescue ActiveRecord::RecordNotFound
     render_404
   end

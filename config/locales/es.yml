@@ -342,7 +342,7 @@ es:
   general_csv_separator: ';'
   general_pdf_fontname: freesans
   general_first_day_of_week: '1'
-  general_lang_name: 'Español'
+  general_lang_name: 'Spanish (Español)'
   general_text_No: 'No'
   general_text_Yes: 'Sí'
   general_text_no: 'no'
@@ -548,7 +548,6 @@ es:
   label_overall_activity: Actividad global
   label_overview: Vistazo
   label_password_lost: ¿Olvidaste la contraseña?
-  label_per_page: Por página
   label_permissions: Permisos
   label_permissions_report: Informe de permisos
   label_personalize_page: Personalizar esta página
@@ -662,7 +661,7 @@ es:
   mail_body_account_information_external: "Puede usar su cuenta %{value} para conectarse."
   mail_body_lost_password: 'Para cambiar su contraseña, haga clic en el siguiente enlace:'
   mail_body_register: 'Para activar su cuenta, haga clic en el siguiente enlace:'
-  mail_body_reminder: "%{count} peticion(es) asignadas a tí finalizan en los próximos %{days} días:"
+  mail_body_reminder: "%{count} peticion(es) asignadas a ti finalizan en los próximos %{days} días:"
   mail_subject_account_activation_request: "Petición de activación de cuenta %{value}"
   mail_subject_lost_password: "Tu contraseña del %{value}"
   mail_subject_register: "Activación de la cuenta del %{value}"
@@ -1152,3 +1151,26 @@ es:
   label_radio_buttons: Botones de selección excluyentes
   label_group_anonymous: Usuarios anónimos
   label_group_non_member: Usuarios no miembros
+  label_add_projects: Añadir Proyectos
+  field_default_status: Estado Predeterminado
+  text_subversion_repository_note: 'Ejemplos: file:///, http://, https://, svn://, svn+[tunnelscheme]://'
+  field_users_visibility: Visibilidad de Usuarios
+  label_users_visibility_all: Todos los Usuarios Activos
+  label_users_visibility_members_of_visible_projects: Miembros de Proyectos Visibles
+  label_edit_attachments: Editar archivos adjuntos
+  setting_link_copied_issue: Enlazar petición cuando se copia
+  label_link_copied_issue: Enlazar petición copiada
+  label_ask: Preguntar
+  label_search_attachments_yes: Buscar adjuntos por nombre de archivo y descripciones
+  label_search_attachments_no: No buscar adjuntos
+  label_search_attachments_only: Sólo Buscar adjuntos
+  label_search_open_issues_only: Sólo Abrir Peticiones
+  field_address: Correo electrónico
+  setting_max_additional_emails: Número Máximo de correos electrónicos adicionales
+  label_email_address_plural: Correo Electrónicos
+  label_email_address_add: Añadir correos electrónicos
+  label_enable_notifications: Permitir Notificaciones
+  label_disable_notifications: No Permitir Notificaciones
+  setting_search_results_per_page: Buscar resultados por página
+  label_blank_value: blanco
+  permission_copy_issues: Copiar petición

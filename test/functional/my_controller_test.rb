@@ -18,7 +18,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class MyControllerTest < ActionController::TestCase
-  fixtures :users, :user_preferences, :roles, :projects, :members, :member_roles,
+  fixtures :users, :email_addresses, :user_preferences, :roles, :projects, :members, :member_roles,
   :issues, :issue_statuses, :trackers, :enumerations, :custom_fields, :auth_sources
 
   def setup
@@ -46,7 +46,7 @@ class MyControllerTest < ActionController::TestCase
     get :page
     assert_response :success
     assert_select 'tr.time-entry' do
-      assert_select 'td.subject a[href=/issues/1]'
+      assert_select 'td.subject a[href="/issues/1"]'
       assert_select 'td.hours', :text => '2.50'
     end
   end
@@ -68,7 +68,7 @@ class MyControllerTest < ActionController::TestCase
     assert_template 'account'
     assert_equal User.find(2), assigns(:user)
 
-    assert_tag :input, :attributes => { :name => 'user[custom_field_values][4]'}
+    assert_select 'input[name=?]', 'user[custom_field_values][4]'
   end
 
   def test_my_account_should_not_show_non_editable_custom_fields
@@ -79,7 +79,7 @@ class MyControllerTest < ActionController::TestCase
     assert_template 'account'
     assert_equal User.find(2), assigns(:user)
 
-    assert_no_tag :input, :attributes => { :name => 'user[custom_field_values][4]'}
+    assert_select 'input[name=?]', 'user[custom_field_values][4]', 0
   end
 
   def test_my_account_should_show_language_select
@@ -119,14 +119,14 @@ class MyControllerTest < ActionController::TestCase
 
   def test_my_account_should_show_destroy_link
     get :account
-    assert_select 'a[href=/my/account/destroy]'
+    assert_select 'a[href="/my/account/destroy"]'
   end
 
   def test_get_destroy_should_display_the_destroy_confirmation
     get :destroy
     assert_response :success
     assert_template 'destroy'
-    assert_select 'form[action=/my/account/destroy]' do
+    assert_select 'form[action="/my/account/destroy"]' do
       assert_select 'input[name=confirm]'
     end
   end
@@ -167,7 +167,7 @@ class MyControllerTest < ActionController::TestCase
                     :new_password_confirmation => 'secret1234'
     assert_response :success
     assert_template 'password'
-    assert_error_tag :content => /Password doesn&#x27;t match confirmation/
+    assert_select_error /Password doesn.*t match confirmation/
 
     # wrong password
     post :password, :password => 'wrongpassword',

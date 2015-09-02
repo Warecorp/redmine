@@ -65,7 +65,7 @@ class MemberTest < ActiveSupport::TestCase
 
   def test_validate
     member = Member.new(:project_id => 1, :user_id => 2, :role_ids => [2])
-    # same use can't have more than one membership for a project
+    # same use cannot have more than one membership for a project
     assert !member.save
 
     # must have one role at least
@@ -79,9 +79,8 @@ class MemberTest < ActiveSupport::TestCase
     member = Member.new(:project_id => 1, :user_id => user.id, :role_ids => [])
     assert !member.save
     assert_include I18n.translate('activerecord.errors.messages.empty'), member.errors[:role]
-    str = "R\xc3\xb4le doit \xc3\xaatre renseign\xc3\xa9(e)"
-    str.force_encoding('UTF-8') if str.respond_to?(:force_encoding)
-    assert_equal str, [member.errors.full_messages].flatten.join
+    assert_equal "R\xc3\xb4le doit \xc3\xaatre renseign\xc3\xa9(e)".force_encoding('UTF-8'),
+    	[member.errors.full_messages].flatten.join
   end
 
   def test_validate_member_role
@@ -131,7 +130,17 @@ class MemberTest < ActiveSupport::TestCase
     end
     assert m.destroyed?
   ensure
-    Member._destroy_callbacks.reject! {|c| c.filter==:destroy_test_callback}
+    Member._destroy_callbacks.delete(:destroy_test_callback)
+  end
+
+  def test_roles_should_be_unique
+    m = Member.new(:user_id => 1, :project_id => 1)
+    m.member_roles.build(:role_id => 1)
+    m.member_roles.build(:role_id => 1)
+    m.save!
+    m.reload
+    assert_equal 1, m.roles.count
+    assert_equal [1], m.roles.ids
   end
 
   def test_sort_without_roles

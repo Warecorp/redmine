@@ -42,14 +42,14 @@ class MailHandler < ActionMailer::Base
     @@handler_options[:no_notification] = (@@handler_options[:no_notification].to_s == '1')
     @@handler_options[:no_permission_check] = (@@handler_options[:no_permission_check].to_s == '1')
 
-    email.force_encoding('ASCII-8BIT') if email.respond_to?(:force_encoding)
+    email.force_encoding('ASCII-8BIT')
     super(email)
   end
 
   # Receives an email and rescues any exception
   def self.safe_receive(*args)
     receive(*args)
-  rescue => e
+  rescue Exception => e
     logger.error "An unexpected error occurred when receiving email: #{e.message}" if logger
     return false
   end
@@ -73,8 +73,8 @@ class MailHandler < ActionMailer::Base
 
   cattr_accessor :ignored_emails_headers
   @@ignored_emails_headers = {
-    'X-Auto-Response-Suppress' => 'oof',
-    'Auto-Submitted' => /\Aauto-(replied|generated)/
+    'Auto-Submitted' => /\Aauto-(replied|generated)/,
+    'X-Autoreply' => 'yes'
   }
 
   # Processes incoming emails
@@ -305,7 +305,7 @@ class MailHandler < ActionMailer::Base
     if user.allowed_to?("add_#{obj.class.name.underscore}_watchers".to_sym, obj.project)
       addresses = [email.to, email.cc].flatten.compact.uniq.collect {|a| a.strip.downcase}
       unless addresses.empty?
-        User.active.where('LOWER(mail) IN (?)', addresses).each do |w|
+        User.active.having_mail(addresses).each do |w|
           obj.add_watcher(w)
         end
       end
@@ -417,7 +417,7 @@ class MailHandler < ActionMailer::Base
             end
 
     parts.reject! do |part|
-      part.header[:content_disposition].try(:disposition_type) == 'attachment'
+      part.attachment?
     end
 
     @plain_text_body = parts.map do |p|
@@ -442,10 +442,6 @@ class MailHandler < ActionMailer::Base
   def cleaned_up_subject
     subject = email.subject.to_s
     subject.strip[0,255]
-  end
-
-  def self.full_sanitizer
-    @full_sanitizer ||= HTML::FullSanitizer.new
   end
 
   def self.assign_string_attribute_with_limit(object, attribute, value, limit=nil)

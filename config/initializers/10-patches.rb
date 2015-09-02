@@ -5,8 +5,7 @@ module ActiveRecord
     include Redmine::I18n
     # Translate attribute names for validation errors display
     def self.human_attribute_name(attr, *args)
-      attr = attr.to_s.sub(/_id$/, '')
-
+      attr = attr.to_s.sub(/_id$/, '').sub(/^.+\./, '')
       l("field_#{name.underscore.gsub('/', '_')}_#{attr}", :default => ["field_#{attr}".to_sym, attr])
     end
   end
@@ -54,56 +53,23 @@ module ActionView
   end
 end
 
-# Do not HTML escape text templates
-module ActionView
-  class Template
-    module Handlers
-      class ERB
-        def call(template)
-          if template.source.encoding_aware?
-            # First, convert to BINARY, so in case the encoding is
-            # wrong, we can still find an encoding tag
-            # (<%# encoding %>) inside the String using a regular
-            # expression
-            template_source = template.source.dup.force_encoding("BINARY")
-
-            erb = template_source.gsub(ENCODING_TAG, '')
-            encoding = $2
-
-            erb.force_encoding valid_encoding(template.source.dup, encoding)
-
-            # Always make sure we return a String in the default_internal
-            erb.encode!
-          else
-            erb = template.source.dup
-          end
-
-          self.class.erb_implementation.new(
-            erb,
-            :trim => (self.class.erb_trim_mode == "-"),
-            :escape => template.identifier =~ /\.text/ # only escape HTML templates
-          ).src
-        end
-      end
-    end
-  end
-end
-
 ActionView::Base.field_error_proc = Proc.new{ |html_tag, instance| html_tag || ''.html_safe }
 
 # HTML5: <option value=""></option> is invalid, use <option value="">&nbsp;</option> instead
 module ActionView
   module Helpers
-    class InstanceTag
-      private
-      def add_options_with_non_empty_blank_option(option_tags, options, value = nil)
-        if options[:include_blank] == true
-          options = options.dup
-          options[:include_blank] = '&nbsp;'.html_safe
+    module Tags
+      class Base
+        private
+        def add_options_with_non_empty_blank_option(option_tags, options, value = nil)
+          if options[:include_blank] == true
+            options = options.dup
+            options[:include_blank] = '&nbsp;'.html_safe
+          end
+          add_options_without_non_empty_blank_option(option_tags, options, value)
         end
-        add_options_without_non_empty_blank_option(option_tags, options, value)
+        alias_method_chain :add_options, :non_empty_blank_option
       end
-      alias_method_chain :add_options, :non_empty_blank_option
     end
 
     module FormTagHelper
@@ -180,6 +146,16 @@ module ActionMailer
   end
 end
 
+# #deliver is deprecated in Rails 4.2
+# Prevents massive deprecation warnings
+module ActionMailer
+  class MessageDelivery < Delegator
+    def deliver
+      deliver_now
+    end
+  end
+end
+
 module ActionController
   module MimeResponds
     class Collector
@@ -197,45 +173,8 @@ module ActionController
     # TODO: remove it in a later version
     def self.session=(*args)
       $stderr.puts "Please remove config/initializers/session_store.rb and run `rake generate_secret_token`.\n" +
-        "Setting the session secret with ActionController.session= is no longer supported in Rails 3."
+        "Setting the session secret with ActionController.session= is no longer supported."
       exit 1
-    end
-  end
-end
-
-if Rails::VERSION::MAJOR < 4 && RUBY_VERSION >= "2.1"
-  module ActiveSupport
-    class HashWithIndifferentAccess
-      def select(*args, &block)
-        dup.tap { |hash| hash.select!(*args, &block) }
-      end
-
-      def reject(*args, &block)
-        dup.tap { |hash| hash.reject!(*args, &block) }
-      end
-    end
-
-    class OrderedHash
-      def select(*args, &block)
-        dup.tap { |hash| hash.select!(*args, &block) }
-      end
-
-      def reject(*args, &block)
-        dup.tap { |hash| hash.reject!(*args, &block) }
-      end
-    end
-  end
-end
-
-module CollectiveIdea
-  module Acts
-    module NestedSet
-      module Model
-        def leaf_with_new_record?
-          new_record? || leaf_without_new_record?
-        end
-        alias_method_chain :leaf?, :new_record
-      end
     end
   end
 end

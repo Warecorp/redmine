@@ -19,8 +19,8 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class MailerTest < ActiveSupport::TestCase
   include Redmine::I18n
-  include ActionDispatch::Assertions::SelectorAssertions
-  fixtures :projects, :enabled_modules, :issues, :users, :members,
+  include Rails::Dom::Testing::Assertions
+  fixtures :projects, :enabled_modules, :issues, :users, :email_addresses, :members,
            :member_roles, :roles, :documents, :attachments, :news,
            :tokens, :journals, :journal_details, :changesets,
            :trackers, :projects_trackers,
@@ -34,10 +34,11 @@ class MailerTest < ActiveSupport::TestCase
     Setting.host_name = 'mydomain.foo'
     Setting.protocol = 'http'
     Setting.plain_text_mail = '0'
+    Setting.default_language = 'en'
+    User.current = nil
   end
 
   def test_generated_links_in_emails
-    Setting.default_language = 'en'
     Setting.host_name = 'mydomain.foo'
     Setting.protocol = 'https'
 
@@ -55,16 +56,19 @@ class MailerTest < ActiveSupport::TestCase
       # link to a referenced ticket
       assert_select 'a[href=?][title=?]',
                     'https://mydomain.foo/issues/1',
-                    "#{ESCAPED_UCANT} print recipes (New)",
+                    "Cannot print recipes (New)",
                     :text => '#1'
       # link to a changeset
       assert_select 'a[href=?][title=?]',
                     'https://mydomain.foo/projects/ecookbook/repository/revisions/2',
-                    'This commit fixes #1, #2 and references #1 &amp; #3',
+                    'This commit fixes #1, #2 and references #1 & #3',
                     :text => 'r2'
       # link to a description diff
-      assert_select 'a[href=?][title=?]',
-                    'https://mydomain.foo/journals/diff/3?detail_id=4',
+      assert_select 'a[href^=?][title=?]',
+                    # should be https://mydomain.foo/journals/diff/3?detail_id=4
+                    # but the Rails 4.2 DOM assertion doesn't handle the ? in the
+                    # attribute value
+                    'https://mydomain.foo/journals/diff/3',
                     'View differences',
                     :text => 'diff'
       # link to an attachment
@@ -75,7 +79,6 @@ class MailerTest < ActiveSupport::TestCase
   end
 
   def test_generated_links_with_prefix
-    Setting.default_language = 'en'
     relative_url_root = Redmine::Utils.relative_url_root
     Setting.host_name = 'mydomain.foo/rdm'
     Setting.protocol = 'http'
@@ -94,22 +97,43 @@ class MailerTest < ActiveSupport::TestCase
       # link to a referenced ticket
       assert_select 'a[href=?][title=?]',
                     'http://mydomain.foo/rdm/issues/1',
-                    "#{ESCAPED_UCANT} print recipes (New)",
+                    "Cannot print recipes (New)",
                     :text => '#1'
       # link to a changeset
       assert_select 'a[href=?][title=?]',
                     'http://mydomain.foo/rdm/projects/ecookbook/repository/revisions/2',
-                    'This commit fixes #1, #2 and references #1 &amp; #3',
+                    'This commit fixes #1, #2 and references #1 & #3',
                     :text => 'r2'
       # link to a description diff
-      assert_select 'a[href=?][title=?]',
-                    'http://mydomain.foo/rdm/journals/diff/3?detail_id=4',
+      assert_select 'a[href^=?][title=?]',
+                    # should be http://mydomain.foo/rdm/journals/diff/3?detail_id=4
+                    # but the Rails 4.2 DOM assertion doesn't handle the ? in the
+                    # attribute value
+                    'http://mydomain.foo/rdm/journals/diff/3',
                     'View differences',
                     :text => 'diff'
       # link to an attachment
       assert_select 'a[href=?]',
                     'http://mydomain.foo/rdm/attachments/download/4/source.rb',
                     :text => 'source.rb'
+    end
+  end
+
+  def test_generated_links_with_port_and_prefix
+    with_settings :host_name => '10.0.0.1:81/redmine', :protocol => 'http' do
+      Mailer.test_email(User.find(1)).deliver
+      mail = last_email
+      assert_not_nil mail
+      assert_include 'http://10.0.0.1:81/redmine', mail_body(mail)
+    end
+  end
+
+  def test_generated_links_with_port
+    with_settings :host_name => '10.0.0.1:81', :protocol => 'http' do
+      Mailer.test_email(User.find(1)).deliver
+      mail = last_email
+      assert_not_nil mail
+      assert_include 'http://10.0.0.1:81', mail_body(mail)
     end
   end
 
@@ -124,7 +148,6 @@ class MailerTest < ActiveSupport::TestCase
   end
 
   def test_generated_links_with_prefix_and_no_relative_url_root
-    Setting.default_language = 'en'
     relative_url_root = Redmine::Utils.relative_url_root
     Setting.host_name = 'mydomain.foo/rdm'
     Setting.protocol = 'http'
@@ -144,16 +167,19 @@ class MailerTest < ActiveSupport::TestCase
       # link to a referenced ticket
       assert_select 'a[href=?][title=?]',
                     'http://mydomain.foo/rdm/issues/1',
-                    "#{ESCAPED_UCANT} print recipes (New)",
+                    "Cannot print recipes (New)",
                     :text => '#1'
       # link to a changeset
       assert_select 'a[href=?][title=?]',
                     'http://mydomain.foo/rdm/projects/ecookbook/repository/revisions/2',
-                    'This commit fixes #1, #2 and references #1 &amp; #3',
+                    'This commit fixes #1, #2 and references #1 & #3',
                     :text => 'r2'
       # link to a description diff
-      assert_select 'a[href=?][title=?]',
-                    'http://mydomain.foo/rdm/journals/diff/3?detail_id=4',
+      assert_select 'a[href^=?][title=?]',
+                    # should be http://mydomain.foo/rdm/journals/diff/3?detail_id=4
+                    # but the Rails 4.2 DOM assertion doesn't handle the ? in the
+                    # attribute value
+                    'http://mydomain.foo/rdm/journals/diff/3',
                     'View differences',
                     :text => 'diff'
       # link to an attachment
@@ -171,7 +197,7 @@ class MailerTest < ActiveSupport::TestCase
     Mailer.deliver_issue_add(issue)
     mail = last_email
     assert_not_nil mail
-    assert_equal 'OOF', mail.header['X-Auto-Response-Suppress'].to_s
+    assert_equal 'All', mail.header['X-Auto-Response-Suppress'].to_s
     assert_equal 'auto-generated', mail.header['Auto-Submitted'].to_s
     assert_equal '<redmine.example.net>', mail.header['List-Id'].to_s
   end
@@ -297,6 +323,14 @@ class MailerTest < ActiveSupport::TestCase
     assert last_email.bcc.include?('dlopper@somenet.foo')
   end
 
+  def test_issue_add_should_send_mail_to_all_user_email_address
+    EmailAddress.create!(:user_id => 3, :address => 'otheremail@somenet.foo')
+    issue = Issue.find(1)
+    assert Mailer.deliver_issue_add(issue)
+    assert last_email.bcc.include?('dlopper@somenet.foo')
+    assert last_email.bcc.include?('otheremail@somenet.foo')
+  end
+
   test "#issue_add should not notify project members that are not allow to view the issue" do
     issue = Issue.find(1)
     Role.find(2).remove_permission!(:view_issues)
@@ -328,7 +362,6 @@ class MailerTest < ActiveSupport::TestCase
   end
 
   def test_issue_add_should_include_enabled_fields
-    Setting.default_language = 'en'
     issue = Issue.find(2)
     assert Mailer.deliver_issue_add(issue)
     assert_mail_body_match '* Target version: 1.0', last_email
@@ -338,7 +371,6 @@ class MailerTest < ActiveSupport::TestCase
   end
 
   def test_issue_add_should_not_include_disabled_fields
-    Setting.default_language = 'en'
     issue = Issue.find(2)
     tracker = issue.tracker
     tracker.core_fields -= ['fixed_version_id']
@@ -353,16 +385,14 @@ class MailerTest < ActiveSupport::TestCase
   # test mailer methods for each language
   def test_issue_add
     issue = Issue.find(1)
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.deliver_issue_add(issue)
     end
   end
 
   def test_issue_edit
     journal = Journal.find(1)
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.deliver_issue_edit(journal)
     end
   end
@@ -409,6 +439,7 @@ class MailerTest < ActiveSupport::TestCase
 
   def test_issue_edit_with_relation_should_notify_users_who_can_see_the_related_issue
     issue = Issue.generate!
+    issue.init_journal(User.find(1))
     private_issue = Issue.generate!(:is_private => true)
     IssueRelation.create!(:issue_from => issue, :issue_to => private_issue, :relation_type => 'relates')
     issue.reload
@@ -425,16 +456,14 @@ class MailerTest < ActiveSupport::TestCase
 
   def test_document_added
     document = Document.find(1)
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.document_added(document).deliver
     end
   end
 
   def test_attachments_added
     attachements = [ Attachment.find_by_container_type('Document') ]
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.attachments_added(attachements).deliver
     end
   end
@@ -461,8 +490,7 @@ class MailerTest < ActiveSupport::TestCase
 
   def test_news_added
     news = News.first
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.news_added(news).deliver
     end
   end
@@ -480,8 +508,7 @@ class MailerTest < ActiveSupport::TestCase
 
   def test_news_comment_added
     comment = Comment.find(2)
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.news_comment_added(comment).deliver
     end
   end
@@ -490,16 +517,14 @@ class MailerTest < ActiveSupport::TestCase
     message = Message.first
     recipients = ([message.root] + message.root.children).collect {|m| m.author.mail if m.author}
     recipients = recipients.compact.uniq
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert Mailer.message_posted(message).deliver
     end
   end
 
   def test_wiki_content_added
     content = WikiContent.find(1)
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert_difference 'ActionMailer::Base.deliveries.size' do
         assert Mailer.wiki_content_added(content).deliver
         assert_select_email do
@@ -513,8 +538,7 @@ class MailerTest < ActiveSupport::TestCase
 
   def test_wiki_content_updated
     content = WikiContent.find(1)
-    valid_languages.each do |lang|
-      Setting.default_language = lang.to_s
+    with_each_language_as_default do
       assert_difference 'ActionMailer::Base.deliveries.size' do
         assert Mailer.wiki_content_updated(content).deliver
         assert_select_email do
@@ -627,8 +651,22 @@ class MailerTest < ActiveSupport::TestCase
     end
   end
 
+  def test_reminders_with_version_option
+    with_settings :default_language => 'en' do 
+      version = Version.generate!(:name => 'Acme', :project_id => 1)
+      Issue.generate!(:assigned_to => User.find(2), :due_date => 5.days.from_now)
+      Issue.generate!(:assigned_to => User.find(3), :due_date => 5.days.from_now, :fixed_version => version)
+      ActionMailer::Base.deliveries.clear
+
+      Mailer.reminders(:days => 42, :version => 'acme')
+      assert_equal 1, ActionMailer::Base.deliveries.size
+
+      mail = last_email
+      assert mail.bcc.include?('dlopper@somenet.foo')
+    end
+  end
+
   def test_mailer_should_not_change_locale
-    Setting.default_language = 'en'
     # Set current language to italian
     set_language_if_valid 'it'
     # Send an email to a french user
@@ -752,8 +790,41 @@ class MailerTest < ActiveSupport::TestCase
     end
   end
 
-  def test_mail_should_return_a_mail_message
-    assert_kind_of ::Mail::Message, Mailer.test_email(User.find(1))
+  def test_with_synched_deliveries_should_yield_with_synced_deliveries
+    ActionMailer::Base.delivery_method = :async_smtp
+    ActionMailer::Base.async_smtp_settings = {:foo => 'bar'}
+
+    Mailer.with_synched_deliveries do
+      assert_equal :smtp, ActionMailer::Base.delivery_method
+      assert_equal({:foo => 'bar'}, ActionMailer::Base.smtp_settings)
+    end
+    assert_equal :async_smtp, ActionMailer::Base.delivery_method
+  ensure
+    ActionMailer::Base.delivery_method = :test
+  end
+
+  def test_email_addresses_should_keep_addresses
+    assert_equal ["foo@example.net"],
+      Mailer.email_addresses("foo@example.net")
+
+    assert_equal ["foo@example.net", "bar@example.net"],
+      Mailer.email_addresses(["foo@example.net", "bar@example.net"])
+  end
+
+  def test_email_addresses_should_replace_users_with_their_email_addresses
+    assert_equal ["admin@somenet.foo"],
+      Mailer.email_addresses(User.find(1))
+
+    assert_equal ["admin@somenet.foo", "jsmith@somenet.foo"],
+      Mailer.email_addresses(User.where(:id => [1,2])).sort
+  end
+
+  def test_email_addresses_should_include_notified_emails_addresses_only
+    EmailAddress.create!(:user_id => 2, :address => "another@somenet.foo", :notify => false)
+    EmailAddress.create!(:user_id => 2, :address => "another2@somenet.foo")
+
+    assert_equal ["another2@somenet.foo", "jsmith@somenet.foo"],
+      Mailer.email_addresses(User.find(2)).sort
   end
 
   private
@@ -770,5 +841,13 @@ class MailerTest < ActiveSupport::TestCase
 
   def html_part
     last_email.parts.detect {|part| part.content_type.include?('text/html')}
+  end
+
+  def with_each_language_as_default(&block)
+    valid_languages.each do |lang|
+      with_settings :default_language => lang.to_s do
+        yield lang
+      end
+    end
   end
 end

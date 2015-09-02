@@ -36,6 +36,10 @@ unsubscribe:
 password_min_length:
   format: int
   default: 8
+# Maximum number of additional email addresses per user
+max_additional_emails:
+  format: int
+  default: 5
 # Maximum lifetime of user sessions in minutes
 session_lifetime:
   format: int
@@ -55,6 +59,8 @@ activity_days_default:
   default: 30
 per_page_options:
   default: '25,50,100'
+search_results_per_page:
+  default: 10
 mail_from:
   default: redmine@example.net
 bcc_recipients:
@@ -136,6 +142,8 @@ cross_project_issue_relations:
 # Enables subtasks to be in other projects
 cross_project_subtasks:
   default: 'tree'
+link_copied_issue:
+  default: 'ask'
 issue_group_assignment:
   default: 0
 default_issue_start_date_to_creation_date:

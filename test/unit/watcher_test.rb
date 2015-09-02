@@ -18,7 +18,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class WatcherTest < ActiveSupport::TestCase
-  fixtures :projects, :users, :members, :member_roles, :roles, :enabled_modules,
+  fixtures :projects, :users, :email_addresses, :members, :member_roles, :roles, :enabled_modules,
            :issues, :issue_statuses, :enumerations, :trackers, :projects_trackers,
            :boards, :messages,
            :wikis, :wiki_pages,
@@ -140,7 +140,7 @@ class WatcherTest < ActiveSupport::TestCase
     assert_equal 1, @issue.remove_watcher(@user)
   end
 
-  def test_prune
+  def test_prune_with_user
     Watcher.delete_all("user_id = 9")
     user = User.find(9)
 
@@ -170,6 +170,16 @@ class WatcherTest < ActiveSupport::TestCase
 
     assert Issue.find(1).watched_by?(user)
     assert !Issue.find(4).watched_by?(user)
+  end
+
+  def test_prune_with_project
+    user = User.find(9)
+    Watcher.new(:watchable => Issue.find(4), :user => User.find(9)).save(:validate => false) # project 2
+    Watcher.new(:watchable => Issue.find(6), :user => User.find(9)).save(:validate => false) # project 5
+
+    assert Watcher.prune(:project => Project.find(5)) > 0
+    assert Issue.find(4).watched_by?(user)
+    assert !Issue.find(6).watched_by?(user)
   end
 
   def test_prune_all

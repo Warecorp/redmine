@@ -33,7 +33,14 @@ class QueryColumn
   end
 
   def caption
-    @caption_key.is_a?(Symbol) ? l(@caption_key) : @caption_key
+    case @caption_key
+    when Symbol
+      l(@caption_key)
+    when Proc
+      @caption_key.call
+    else
+      @caption_key
+    end
   end
 
   # Returns true if the column is sortable, otherwise false
@@ -288,7 +295,7 @@ class Query < ActiveRecord::Base
   end
 
   def trackers
-    @trackers ||= project.nil? ? Tracker.sorted.all : project.rolled_up_trackers
+    @trackers ||= project.nil? ? Tracker.sorted.to_a : project.rolled_up_trackers
   end
 
   # Returns a hash of localized labels for all filter operators
@@ -306,7 +313,7 @@ class Query < ActiveRecord::Base
   end
 
   def all_projects
-    @all_projects ||= Project.visible.all
+    @all_projects ||= Project.visible.to_a
   end
 
   def all_projects_values
@@ -479,7 +486,9 @@ class Query < ActiveRecord::Base
     if arg.is_a?(Hash)
       arg = arg.keys.sort.collect {|k| arg[k]}
     end
-    c = arg.select {|k,o| !k.to_s.blank?}.slice(0,3).collect {|k,o| [k.to_s, (o == 'desc' || o == false) ? 'desc' : 'asc']}
+    if arg
+      c = arg.select {|k,o| !k.to_s.blank?}.slice(0,3).collect {|k,o| [k.to_s, (o == 'desc' || o == false) ? 'desc' : 'asc']}
+    end
     write_attribute(:sort_criteria, c)
   end
 
@@ -502,7 +511,7 @@ class Query < ActiveRecord::Base
   # Returns the SQL sort order that should be prepended for grouping
   def group_by_sort_order
     if grouped? && (column = group_by_column)
-      order = sort_criteria_order_for(column.name) || column.default_order
+      order = (sort_criteria_order_for(column.name) || column.default_order).try(:upcase)
       column.sortable.is_a?(Array) ?
         column.sortable.collect {|s| "#{s} #{order}"}.join(',') :
         "#{column.sortable} #{order}"
@@ -641,7 +650,7 @@ class Query < ActiveRecord::Base
       if value.any?
         case type_for(field)
         when :date, :date_past
-          sql = date_clause(db_table, db_field, parse_date(value.first), parse_date(value.first))
+          sql = date_clause(db_table, db_field, parse_date(value.first), parse_date(value.first), is_custom_filter)
         when :integer
           if is_custom_filter
             sql = "(#{db_table}.#{db_field} <> '' AND CAST(CASE #{db_table}.#{db_field} WHEN '' THEN '0' ELSE #{db_table}.#{db_field} END AS decimal(30,3)) = #{value.first.to_i})"
@@ -655,7 +664,7 @@ class Query < ActiveRecord::Base
             sql = "#{db_table}.#{db_field} BETWEEN #{value.first.to_f - 1e-5} AND #{value.first.to_f + 1e-5}"
           end
         else
-          sql = "#{db_table}.#{db_field} IN (" + value.collect{|val| "'#{connection.quote_string(val)}'"}.join(",") + ")"
+          sql = "#{db_table}.#{db_field} IN (" + value.collect{|val| "'#{self.class.connection.quote_string(val)}'"}.join(",") + ")"
         end
       else
         # IN an empty set
@@ -663,7 +672,7 @@ class Query < ActiveRecord::Base
       end
     when "!"
       if value.any?
-        sql = "(#{db_table}.#{db_field} IS NULL OR #{db_table}.#{db_field} NOT IN (" + value.collect{|val| "'#{connection.quote_string(val)}'"}.join(",") + "))"
+        sql = "(#{db_table}.#{db_field} IS NULL OR #{db_table}.#{db_field} NOT IN (" + value.collect{|val| "'#{self.class.connection.quote_string(val)}'"}.join(",") + "))"
       else
         # NOT IN an empty set
         sql = "1=1"
@@ -676,7 +685,7 @@ class Query < ActiveRecord::Base
       sql << " AND #{db_table}.#{db_field} <> ''" if is_custom_filter
     when ">="
       if [:date, :date_past].include?(type_for(field))
-        sql = date_clause(db_table, db_field, parse_date(value.first), nil)
+        sql = date_clause(db_table, db_field, parse_date(value.first), nil, is_custom_filter)
       else
         if is_custom_filter
           sql = "(#{db_table}.#{db_field} <> '' AND CAST(CASE #{db_table}.#{db_field} WHEN '' THEN '0' ELSE #{db_table}.#{db_field} END AS decimal(30,3)) >= #{value.first.to_f})"
@@ -686,7 +695,7 @@ class Query < ActiveRecord::Base
       end
     when "<="
       if [:date, :date_past].include?(type_for(field))
-        sql = date_clause(db_table, db_field, nil, parse_date(value.first))
+        sql = date_clause(db_table, db_field, nil, parse_date(value.first), is_custom_filter)
       else
         if is_custom_filter
           sql = "(#{db_table}.#{db_field} <> '' AND CAST(CASE #{db_table}.#{db_field} WHEN '' THEN '0' ELSE #{db_table}.#{db_field} END AS decimal(30,3)) <= #{value.first.to_f})"
@@ -696,7 +705,7 @@ class Query < ActiveRecord::Base
       end
     when "><"
       if [:date, :date_past].include?(type_for(field))
-        sql = date_clause(db_table, db_field, parse_date(value[0]), parse_date(value[1]))
+        sql = date_clause(db_table, db_field, parse_date(value[0]), parse_date(value[1]), is_custom_filter)
       else
         if is_custom_filter
           sql = "(#{db_table}.#{db_field} <> '' AND CAST(CASE #{db_table}.#{db_field} WHEN '' THEN '0' ELSE #{db_table}.#{db_field} END AS decimal(30,3)) BETWEEN #{value[0].to_f} AND #{value[1].to_f})"
@@ -705,73 +714,73 @@ class Query < ActiveRecord::Base
         end
       end
     when "o"
-      sql = "#{queried_table_name}.status_id IN (SELECT id FROM #{IssueStatus.table_name} WHERE is_closed=#{connection.quoted_false})" if field == "status_id"
+      sql = "#{queried_table_name}.status_id IN (SELECT id FROM #{IssueStatus.table_name} WHERE is_closed=#{self.class.connection.quoted_false})" if field == "status_id"
     when "c"
-      sql = "#{queried_table_name}.status_id IN (SELECT id FROM #{IssueStatus.table_name} WHERE is_closed=#{connection.quoted_true})" if field == "status_id"
+      sql = "#{queried_table_name}.status_id IN (SELECT id FROM #{IssueStatus.table_name} WHERE is_closed=#{self.class.connection.quoted_true})" if field == "status_id"
     when "><t-"
       # between today - n days and today
-      sql = relative_date_clause(db_table, db_field, - value.first.to_i, 0)
+      sql = relative_date_clause(db_table, db_field, - value.first.to_i, 0, is_custom_filter)
     when ">t-"
       # >= today - n days
-      sql = relative_date_clause(db_table, db_field, - value.first.to_i, nil)
+      sql = relative_date_clause(db_table, db_field, - value.first.to_i, nil, is_custom_filter)
     when "<t-"
       # <= today - n days
-      sql = relative_date_clause(db_table, db_field, nil, - value.first.to_i)
+      sql = relative_date_clause(db_table, db_field, nil, - value.first.to_i, is_custom_filter)
     when "t-"
       # = n days in past
-      sql = relative_date_clause(db_table, db_field, - value.first.to_i, - value.first.to_i)
+      sql = relative_date_clause(db_table, db_field, - value.first.to_i, - value.first.to_i, is_custom_filter)
     when "><t+"
       # between today and today + n days
-      sql = relative_date_clause(db_table, db_field, 0, value.first.to_i)
+      sql = relative_date_clause(db_table, db_field, 0, value.first.to_i, is_custom_filter)
     when ">t+"
       # >= today + n days
-      sql = relative_date_clause(db_table, db_field, value.first.to_i, nil)
+      sql = relative_date_clause(db_table, db_field, value.first.to_i, nil, is_custom_filter)
     when "<t+"
       # <= today + n days
-      sql = relative_date_clause(db_table, db_field, nil, value.first.to_i)
+      sql = relative_date_clause(db_table, db_field, nil, value.first.to_i, is_custom_filter)
     when "t+"
       # = today + n days
-      sql = relative_date_clause(db_table, db_field, value.first.to_i, value.first.to_i)
+      sql = relative_date_clause(db_table, db_field, value.first.to_i, value.first.to_i, is_custom_filter)
     when "t"
       # = today
-      sql = relative_date_clause(db_table, db_field, 0, 0)
+      sql = relative_date_clause(db_table, db_field, 0, 0, is_custom_filter)
     when "ld"
       # = yesterday
-      sql = relative_date_clause(db_table, db_field, -1, -1)
+      sql = relative_date_clause(db_table, db_field, -1, -1, is_custom_filter)
     when "w"
       # = this week
       first_day_of_week = l(:general_first_day_of_week).to_i
       day_of_week = Date.today.cwday
       days_ago = (day_of_week >= first_day_of_week ? day_of_week - first_day_of_week : day_of_week + 7 - first_day_of_week)
-      sql = relative_date_clause(db_table, db_field, - days_ago, - days_ago + 6)
+      sql = relative_date_clause(db_table, db_field, - days_ago, - days_ago + 6, is_custom_filter)
     when "lw"
       # = last week
       first_day_of_week = l(:general_first_day_of_week).to_i
       day_of_week = Date.today.cwday
       days_ago = (day_of_week >= first_day_of_week ? day_of_week - first_day_of_week : day_of_week + 7 - first_day_of_week)
-      sql = relative_date_clause(db_table, db_field, - days_ago - 7, - days_ago - 1)
+      sql = relative_date_clause(db_table, db_field, - days_ago - 7, - days_ago - 1, is_custom_filter)
     when "l2w"
       # = last 2 weeks
       first_day_of_week = l(:general_first_day_of_week).to_i
       day_of_week = Date.today.cwday
       days_ago = (day_of_week >= first_day_of_week ? day_of_week - first_day_of_week : day_of_week + 7 - first_day_of_week)
-      sql = relative_date_clause(db_table, db_field, - days_ago - 14, - days_ago - 1)
+      sql = relative_date_clause(db_table, db_field, - days_ago - 14, - days_ago - 1, is_custom_filter)
     when "m"
       # = this month
       date = Date.today
-      sql = date_clause(db_table, db_field, date.beginning_of_month, date.end_of_month)
+      sql = date_clause(db_table, db_field, date.beginning_of_month, date.end_of_month, is_custom_filter)
     when "lm"
       # = last month
       date = Date.today.prev_month
-      sql = date_clause(db_table, db_field, date.beginning_of_month, date.end_of_month)
+      sql = date_clause(db_table, db_field, date.beginning_of_month, date.end_of_month, is_custom_filter)
     when "y"
       # = this year
       date = Date.today
-      sql = date_clause(db_table, db_field, date.beginning_of_year, date.end_of_year)
+      sql = date_clause(db_table, db_field, date.beginning_of_year, date.end_of_year, is_custom_filter)
     when "~"
-      sql = "LOWER(#{db_table}.#{db_field}) LIKE '%#{connection.quote_string(value.first.to_s.downcase)}%'"
+      sql = "LOWER(#{db_table}.#{db_field}) LIKE '%#{self.class.connection.quote_string(value.first.to_s.downcase)}%'"
     when "!~"
-      sql = "LOWER(#{db_table}.#{db_field}) NOT LIKE '%#{connection.quote_string(value.first.to_s.downcase)}%'"
+      sql = "LOWER(#{db_table}.#{db_field}) NOT LIKE '%#{self.class.connection.quote_string(value.first.to_s.downcase)}%'"
     else
       raise "Unknown query operator #{operator}"
     end
@@ -822,8 +831,18 @@ class Query < ActiveRecord::Base
     end
   end
 
+  def quoted_time(time, is_custom_filter)
+    if is_custom_filter
+      # Custom field values are stored as strings in the DB
+      # using this format that does not depend on DB date representation
+      time.strftime("%Y-%m-%d %H:%M:%S")
+    else
+      self.class.connection.quoted_date(time)
+    end
+  end
+
   # Returns a SQL clause for a date or datetime field.
-  def date_clause(table, field, from, to)
+  def date_clause(table, field, from, to, is_custom_filter)
     s = []
     if from
       if from.is_a?(Date)
@@ -834,7 +853,7 @@ class Query < ActiveRecord::Base
       if self.class.default_timezone == :utc
         from = from.utc
       end
-      s << ("#{table}.#{field} > '%s'" % [connection.quoted_date(from)])
+      s << ("#{table}.#{field} > '%s'" % [quoted_time(from, is_custom_filter)])
     end
     if to
       if to.is_a?(Date)
@@ -843,14 +862,14 @@ class Query < ActiveRecord::Base
       if self.class.default_timezone == :utc
         to = to.utc
       end
-      s << ("#{table}.#{field} <= '%s'" % [connection.quoted_date(to)])
+      s << ("#{table}.#{field} <= '%s'" % [quoted_time(to, is_custom_filter)])
     end
     s.join(' AND ')
   end
 
   # Returns a SQL clause for a date or datetime field using relative dates.
-  def relative_date_clause(table, field, days_from, days_to)
-    date_clause(table, field, (days_from ? Date.today + days_from : nil), (days_to ? Date.today + days_to : nil))
+  def relative_date_clause(table, field, days_from, days_to, is_custom_filter)
+    date_clause(table, field, (days_from ? Date.today + days_from : nil), (days_to ? Date.today + days_to : nil), is_custom_filter)
   end
 
   # Returns a Date or Time from the given filter value

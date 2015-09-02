@@ -21,6 +21,7 @@ class ProjectNestedSetTest < ActiveSupport::TestCase
 
   def setup
     Project.delete_all
+    Tracker.delete_all
 
     @a = Project.create!(:name => 'A', :identifier => 'projecta')
     @a1 = Project.create!(:name => 'A1', :identifier => 'projecta1')
@@ -59,6 +60,11 @@ class ProjectNestedSetTest < ActiveSupport::TestCase
 
     Project.rebuild_tree!
     assert_valid_nested_set
+  end
+
+  def test_rebuild_without_projects_should_not_fail
+    Project.delete_all
+    assert Project.rebuild_tree!
   end
 
   def test_moving_a_child_to_a_different_parent_should_keep_valid_tree

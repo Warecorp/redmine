@@ -39,8 +39,13 @@ class Role < ActiveRecord::Base
     ['own', :label_issues_visibility_own]
   ]
 
-  scope :sorted, lambda { order("#{table_name}.builtin ASC, #{table_name}.position ASC") }
-  scope :givable, lambda { order("#{table_name}.position ASC").where(:builtin => 0) }
+  USERS_VISIBILITY_OPTIONS = [
+    ['all', :label_users_visibility_all],
+    ['members_of_visible_projects', :label_users_visibility_members_of_visible_projects]
+  ]
+
+  scope :sorted, lambda { order(:builtin, :position) }
+  scope :givable, lambda { order(:position).where(:builtin => 0) }
   scope :builtin, lambda { |*args|
     compare = (args.first == true ? 'not' : '')
     where("#{compare} builtin = 0")
@@ -66,7 +71,10 @@ class Role < ActiveRecord::Base
   validates_length_of :name, :maximum => 30
   validates_inclusion_of :issues_visibility,
     :in => ISSUES_VISIBILITY_OPTIONS.collect(&:first),
-    :if => lambda {|role| role.respond_to?(:issues_visibility)}
+    :if => lambda {|role| role.respond_to?(:issues_visibility) && role.issues_visibility_changed?}
+  validates_inclusion_of :users_visibility,
+    :in => USERS_VISIBILITY_OPTIONS.collect(&:first),
+    :if => lambda {|role| role.respond_to?(:users_visibility) && role.users_visibility_changed?}
 
   # Copies attributes from another role, arg can be an id or a Role
   def copy_from(arg, options={})
@@ -103,6 +111,10 @@ class Role < ActiveRecord::Base
   # Returns true if the role has the given permission
   def has_permission?(perm)
     !permissions.nil? && permissions.include?(perm.to_sym)
+  end
+
+  def consider_workflow?
+    has_permission?(:add_issues) || has_permission?(:edit_issues)
   end
 
   def <=>(role)
@@ -166,7 +178,7 @@ class Role < ActiveRecord::Base
 
   # Find all the roles that can be given to a project member
   def self.find_all_givable
-    Role.givable.all
+    Role.givable.to_a
   end
 
   # Return the builtin 'non member' role.  If the role doesn't exist,
@@ -192,8 +204,8 @@ private
   end
 
   def check_deletable
-    raise "Can't delete role" if members.any?
-    raise "Can't delete builtin role" if builtin?
+    raise "Cannot delete role" if members.any?
+    raise "Cannot delete builtin role" if builtin?
   end
 
   def self.find_or_create_system_role(builtin, name)

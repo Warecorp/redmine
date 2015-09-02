@@ -22,10 +22,13 @@ require File.expand_path('../../test_helper', __FILE__)
 class ChangesetTest < ActiveSupport::TestCase
   fixtures :projects, :repositories,
            :issues, :issue_statuses, :issue_categories,
+           :journals, :journal_details,
+           :workflows,
            :changesets, :changes,
            :enumerations,
            :custom_fields, :custom_values,
            :users, :members, :member_roles,
+           :email_addresses,
            :trackers, :projects_trackers,
            :enabled_modules, :roles
 
@@ -160,6 +163,30 @@ class ChangesetTest < ActiveSupport::TestCase
                       :revision     => '12345')
     assert c.save
     assert_equal [1,2,3], c.issue_ids.sort
+  end
+
+  def test_update_keywords_with_changes_should_create_journal
+    issue = Issue.generate!(:project_id => 1, :status_id => 1)
+
+    with_settings :commit_update_keywords => [{'keywords' => 'fixes', 'status_id' => '3'}] do
+      assert_difference 'Journal.count' do
+        c = Changeset.generate!(:repository => Project.find(1).repository,:comments => "Fixes ##{issue.id}")
+        assert_include c.id, issue.reload.changeset_ids
+        journal = Journal.order('id DESC').first
+        assert_equal 1, journal.details.count
+      end
+    end
+  end
+
+  def test_update_keywords_without_change_should_not_create_journal
+    issue = Issue.generate!(:project_id => 1, :status_id => 3)
+
+    with_settings :commit_update_keywords => [{'keywords' => 'fixes', 'status_id' => '3'}] do
+      assert_no_difference 'Journal.count' do
+        c = Changeset.generate!(:repository => Project.find(1).repository,:comments => "Fixes ##{issue.id}")
+        assert_include c.id, issue.reload.changeset_ids
+      end
+    end
   end
 
   def test_update_keywords_with_multiple_rules
@@ -388,8 +415,7 @@ class ChangesetTest < ActiveSupport::TestCase
   def test_comments_should_be_converted_to_utf8
     proj = Project.find(3)
     # str = File.read("#{RAILS_ROOT}/test/fixtures/encoding/iso-8859-1.txt")
-    str = "Texte encod\xe9 en ISO-8859-1."
-    str.force_encoding("ASCII-8BIT") if str.respond_to?(:force_encoding)
+    str = "Texte encod\xe9 en ISO-8859-1.".force_encoding("ASCII-8BIT")
     r = Repository::Bazaar.create!(
             :project      => proj,
             :url          => '/tmp/test/bazaar',
@@ -401,18 +427,15 @@ class ChangesetTest < ActiveSupport::TestCase
                       :scmid        => '12345',
                       :comments     => str)
     assert( c.save )
-    str_utf8 = "Texte encod\xc3\xa9 en ISO-8859-1."
-    str_utf8.force_encoding("UTF-8") if str_utf8.respond_to?(:force_encoding)
+    str_utf8 = "Texte encod\xc3\xa9 en ISO-8859-1.".force_encoding("UTF-8")
     assert_equal str_utf8, c.comments
   end
 
   def test_invalid_utf8_sequences_in_comments_should_be_replaced_latin1
     proj = Project.find(3)
     # str = File.read("#{RAILS_ROOT}/test/fixtures/encoding/iso-8859-1.txt")
-    str1 = "Texte encod\xe9 en ISO-8859-1."
-    str2 = "\xe9a\xe9b\xe9c\xe9d\xe9e test"
-    str1.force_encoding("UTF-8") if str1.respond_to?(:force_encoding)
-    str2.force_encoding("ASCII-8BIT") if str2.respond_to?(:force_encoding)
+    str1 = "Texte encod\xe9 en ISO-8859-1.".force_encoding("UTF-8")
+    str2 = "\xe9a\xe9b\xe9c\xe9d\xe9e test".force_encoding("ASCII-8BIT")
     r = Repository::Bazaar.create!(
             :project      => proj,
             :url          => '/tmp/test/bazaar',
@@ -431,10 +454,7 @@ class ChangesetTest < ActiveSupport::TestCase
 
   def test_invalid_utf8_sequences_in_comments_should_be_replaced_ja_jis
     proj = Project.find(3)
-    str = "test\xb5\xfetest\xb5\xfe"
-    if str.respond_to?(:force_encoding)
-      str.force_encoding('ASCII-8BIT')
-    end
+    str = "test\xb5\xfetest\xb5\xfe".force_encoding('ASCII-8BIT')
     r = Repository::Bazaar.create!(
             :project      => proj,
             :url          => '/tmp/test/bazaar',
@@ -453,14 +473,12 @@ class ChangesetTest < ActiveSupport::TestCase
     s1 = "\xC2\x80"
     s2 = "\xc3\x82\xc2\x80"
     s4 = s2.dup
-    if s1.respond_to?(:force_encoding)
-      s3 = s1.dup
-      s1.force_encoding('ASCII-8BIT')
-      s2.force_encoding('ASCII-8BIT')
-      s3.force_encoding('ISO-8859-1')
-      s4.force_encoding('UTF-8')
-      assert_equal s3.encode('UTF-8'), s4
-    end
+    s3 = s1.dup
+    s1.force_encoding('ASCII-8BIT')
+    s2.force_encoding('ASCII-8BIT')
+    s3.force_encoding('ISO-8859-1')
+    s4.force_encoding('UTF-8')
+    assert_equal s3.encode('UTF-8'), s4
     proj = Project.find(3)
     r = Repository::Bazaar.create!(
             :project      => proj,
@@ -478,10 +496,8 @@ class ChangesetTest < ActiveSupport::TestCase
 
   def test_invalid_utf8_sequences_in_paths_should_be_replaced
     proj = Project.find(3)
-    str1 = "Texte encod\xe9 en ISO-8859-1"
-    str2 = "\xe9a\xe9b\xe9c\xe9d\xe9e test"
-    str1.force_encoding("UTF-8")      if str1.respond_to?(:force_encoding)
-    str2.force_encoding("ASCII-8BIT") if str2.respond_to?(:force_encoding)
+    str1 = "Texte encod\xe9 en ISO-8859-1".force_encoding("UTF-8")
+    str2 = "\xe9a\xe9b\xe9c\xe9d\xe9e test".force_encoding("ASCII-8BIT")
     r = Repository::Bazaar.create!(
             :project => proj,
             :url => '/tmp/test/bazaar',
@@ -521,9 +537,7 @@ class ChangesetTest < ActiveSupport::TestCase
     assert( c.save )
     assert_equal "", c.comments
     assert_equal nil, c.committer
-    if c.comments.respond_to?(:force_encoding)
-      assert_equal "UTF-8", c.comments.encoding.to_s
-    end
+    assert_equal "UTF-8", c.comments.encoding.to_s
   end
 
   def test_comments_empty
@@ -542,10 +556,8 @@ class ChangesetTest < ActiveSupport::TestCase
     assert( c.save )
     assert_equal "", c.comments
     assert_equal "", c.committer
-    if c.comments.respond_to?(:force_encoding)
-      assert_equal "UTF-8", c.comments.encoding.to_s
-      assert_equal "UTF-8", c.committer.encoding.to_s
-    end
+    assert_equal "UTF-8", c.comments.encoding.to_s
+    assert_equal "UTF-8", c.committer.encoding.to_s
   end
 
   def test_comments_should_accept_more_than_64k

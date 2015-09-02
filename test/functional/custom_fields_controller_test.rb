@@ -18,7 +18,18 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class CustomFieldsControllerTest < ActionController::TestCase
-  fixtures :custom_fields, :custom_values, :trackers, :users, :projects
+  fixtures :custom_fields, :custom_values,
+           :custom_fields_projects, :custom_fields_trackers,
+           :roles, :users,
+           :members, :member_roles,
+           :groups_users,
+           :trackers, :projects_trackers,
+           :enabled_modules,
+           :projects, :issues,
+           :issue_statuses,
+           :issue_categories,
+           :enumerations,
+           :workflows
 
   def setup
     @request.session[:user_id] = 1
@@ -34,7 +45,7 @@ class CustomFieldsControllerTest < ActionController::TestCase
     get :new
     assert_response :success
     assert_template 'select_type'
-    assert_select 'input[name=type]', CustomField.subclasses.size
+    assert_select 'input[name=type]', CustomFieldsHelper::CUSTOM_FIELDS_TABS.size
     assert_select 'input[name=type][checked=checked]', 1
   end
 
@@ -112,7 +123,7 @@ class CustomFieldsControllerTest < ActionController::TestCase
   end
 
   def test_new_js
-    get :new, :type => 'IssueCustomField', :custom_field => {:field_format => 'list'}, :format => 'js'
+    xhr :get, :new, :type => 'IssueCustomField', :custom_field => {:field_format => 'list'}, :format => 'js'
     assert_response :success
     assert_template 'new'
     assert_equal 'text/javascript', response.content_type
@@ -181,7 +192,7 @@ class CustomFieldsControllerTest < ActionController::TestCase
     get :edit, :id => 1
     assert_response :success
     assert_template 'edit'
-    assert_tag 'input', :attributes => {:name => 'custom_field[name]', :value => 'Database'}
+    assert_select 'input[name=?][value=?]', 'custom_field[name]', 'Database'
   end
 
   def test_edit_invalid_custom_field_should_render_404

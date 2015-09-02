@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-RedmineApp::Application.routes.draw do
+Rails.application.routes.draw do
   root :to => 'welcome#index', :as => 'home'
 
   match 'login', :to => 'account#login', :as => 'signin', :via => [:get, :post]
@@ -25,10 +25,10 @@ RedmineApp::Application.routes.draw do
   match 'account/activate', :to => 'account#activate', :via => :get
   get 'account/activation_email', :to => 'account#activation_email', :as => 'activation_email'
 
-  match '/news/preview', :controller => 'previews', :action => 'news', :as => 'preview_news', :via => [:get, :post, :put]
-  match '/issues/preview/new/:project_id', :to => 'previews#issue', :as => 'preview_new_issue', :via => [:get, :post, :put]
-  match '/issues/preview/edit/:id', :to => 'previews#issue', :as => 'preview_edit_issue', :via => [:get, :post, :put]
-  match '/issues/preview', :to => 'previews#issue', :as => 'preview_issue', :via => [:get, :post, :put]
+  match '/news/preview', :controller => 'previews', :action => 'news', :as => 'preview_news', :via => [:get, :post, :put, :patch]
+  match '/issues/preview/new/:project_id', :to => 'previews#issue', :as => 'preview_new_issue', :via => [:get, :post, :put, :patch]
+  match '/issues/preview/edit/:id', :to => 'previews#issue', :as => 'preview_edit_issue', :via => [:get, :post, :put, :patch]
+  match '/issues/preview', :to => 'previews#issue', :as => 'preview_issue', :via => [:get, :post, :put, :patch]
 
   match 'projects/:id/wiki', :to => 'wikis#edit', :via => :post
   match 'projects/:id/wiki/destroy', :to => 'wikis#destroy', :via => [:get, :post]
@@ -73,10 +73,10 @@ RedmineApp::Application.routes.draw do
   match 'my/remove_block', :controller => 'my', :action => 'remove_block', :via => :post
   match 'my/order_blocks', :controller => 'my', :action => 'order_blocks', :via => :post
 
-  resources :users
-  match 'users/:id/memberships/:membership_id', :to => 'users#edit_membership', :via => :put, :as => 'user_membership'
-  match 'users/:id/memberships/:membership_id', :to => 'users#destroy_membership', :via => :delete
-  match 'users/:id/memberships', :to => 'users#edit_membership', :via => :post, :as => 'user_memberships'
+  resources :users do
+    resources :memberships, :controller => 'principal_memberships'
+    resources :email_addresses, :only => [:index, :create, :update, :destroy]
+  end
 
   post 'watchers/watch', :to => 'watchers#watch', :as => 'watch'
   delete 'watchers/watch', :to => 'watchers#unwatch'
@@ -112,8 +112,8 @@ RedmineApp::Application.routes.draw do
 
     get 'issues/:copy_from/copy', :to => 'issues#new', :as => 'copy_issue'
     resources :issues, :only => [:index, :new, :create]
-    # issue form update
-    match 'issues/update_form', :controller => 'issues', :action => 'update_form', :via => [:put, :post], :as => 'issue_form'
+    # Used when updating the form of a new issue
+    post 'issues/new', :to => 'issues#new'
 
     resources :files, :only => [:index, :new, :create]
 
@@ -127,7 +127,7 @@ RedmineApp::Application.routes.draw do
     get 'versions', :to => 'versions#index'
 
     resources :news, :except => [:show, :edit, :update, :destroy]
-    resources :time_entries, :controller => 'timelog' do
+    resources :time_entries, :controller => 'timelog', :except => [:show, :edit, :update, :destroy] do
       get 'report', :on => :collection
     end
     resources :queries, :only => [:new, :create]
@@ -151,7 +151,7 @@ RedmineApp::Application.routes.draw do
         post 'rename'
         get 'history'
         get 'diff'
-        match 'preview', :via => [:post, :put]
+        match 'preview', :via => [:post, :put, :patch]
         post 'protect'
         post 'add_attachment'
       end
@@ -168,11 +168,15 @@ RedmineApp::Application.routes.draw do
   end
 
   resources :issues do
+    member do
+      # Used when updating the form of an existing issue
+      patch 'edit', :to => 'issues#edit'
+    end
     collection do
       match 'bulk_edit', :via => [:get, :post]
       post 'bulk_update'
     end
-    resources :time_entries, :controller => 'timelog' do
+    resources :time_entries, :controller => 'timelog', :except => [:show, :edit, :update, :destroy] do
       collection do
         get 'report'
       end
@@ -181,6 +185,8 @@ RedmineApp::Application.routes.draw do
       resources :relations, :controller => 'issue_relations', :only => [:index, :show, :create, :destroy]
     end
   end
+  # Used when updating the form of a new issue outside a project
+  post '/issues/new', :to => 'issues#new'
   match '/issues', :controller => 'issues', :action => 'destroy', :via => :delete
 
   resources :queries, :except => [:show]
@@ -210,23 +216,23 @@ RedmineApp::Application.routes.draw do
   # TODO: delete /time_entries for bulk deletion
   match '/time_entries/destroy', :to => 'timelog#destroy', :via => :delete
 
-  get 'projects/:id/activity', :to => 'activities#index'
-  get 'projects/:id/activity.:format', :to => 'activities#index'
+  get 'projects/:id/activity', :to => 'activities#index', :as => :project_activity
   get 'activity', :to => 'activities#index'
 
   # repositories routes
   get 'projects/:id/repository/:repository_id/statistics', :to => 'repositories#stats'
   get 'projects/:id/repository/:repository_id/graph', :to => 'repositories#graph'
 
-  get 'projects/:id/repository/:repository_id/changes(/*path(.:ext))',
-      :to => 'repositories#changes'
+  get 'projects/:id/repository/:repository_id/changes(/*path)',
+      :to => 'repositories#changes',
+      :format => false
 
   get 'projects/:id/repository/:repository_id/revisions/:rev', :to => 'repositories#revision'
   get 'projects/:id/repository/:repository_id/revision', :to => 'repositories#revision'
   post   'projects/:id/repository/:repository_id/revisions/:rev/issues', :to => 'repositories#add_related_issue'
   delete 'projects/:id/repository/:repository_id/revisions/:rev/issues/:issue_id', :to => 'repositories#remove_related_issue'
   get 'projects/:id/repository/:repository_id/revisions', :to => 'repositories#revisions'
-  get 'projects/:id/repository/:repository_id/revisions/:rev/:action(/*path(.:ext))',
+  get 'projects/:id/repository/:repository_id/revisions/:rev/:action(/*path)',
       :controller => 'repositories',
       :format => false,
       :constraints => {
@@ -237,27 +243,30 @@ RedmineApp::Application.routes.draw do
   get 'projects/:id/repository/statistics', :to => 'repositories#stats'
   get 'projects/:id/repository/graph', :to => 'repositories#graph'
 
-  get 'projects/:id/repository/changes(/*path(.:ext))',
-      :to => 'repositories#changes'
+  get 'projects/:id/repository/changes(/*path)',
+      :to => 'repositories#changes',
+      :format => false
 
   get 'projects/:id/repository/revisions', :to => 'repositories#revisions'
   get 'projects/:id/repository/revisions/:rev', :to => 'repositories#revision'
   get 'projects/:id/repository/revision', :to => 'repositories#revision'
   post   'projects/:id/repository/revisions/:rev/issues', :to => 'repositories#add_related_issue'
   delete 'projects/:id/repository/revisions/:rev/issues/:issue_id', :to => 'repositories#remove_related_issue'
-  get 'projects/:id/repository/revisions/:rev/:action(/*path(.:ext))',
+  get 'projects/:id/repository/revisions/:rev/:action(/*path)',
       :controller => 'repositories',
       :format => false,
       :constraints => {
             :action => /(browse|show|entry|raw|annotate|diff)/,
             :rev    => /[a-z0-9\.\-_]+/
           }
-  get 'projects/:id/repository/:repository_id/:action(/*path(.:ext))',
+  get 'projects/:id/repository/:repository_id/:action(/*path)',
       :controller => 'repositories',
-      :action => /(browse|show|entry|raw|changes|annotate|diff)/
-  get 'projects/:id/repository/:action(/*path(.:ext))',
+      :action => /(browse|show|entry|raw|changes|annotate|diff)/,
+      :format => false
+  get 'projects/:id/repository/:action(/*path)',
       :controller => 'repositories',
-      :action => /(browse|show|entry|raw|changes|annotate|diff)/
+      :action => /(browse|show|entry|raw|changes|annotate|diff)/,
+      :format => false
 
   get 'projects/:id/repository/:repository_id', :to => 'repositories#show', :path => nil
   get 'projects/:id/repository', :to => 'repositories#show', :path => nil
@@ -268,17 +277,19 @@ RedmineApp::Application.routes.draw do
   get 'attachments/download/:id', :to => 'attachments#download', :id => /\d+/
   get 'attachments/thumbnail/:id(/:size)', :to => 'attachments#thumbnail', :id => /\d+/, :size => /\d+/, :as => 'thumbnail'
   resources :attachments, :only => [:show, :destroy]
+  get 'attachments/:object_type/:object_id/edit', :to => 'attachments#edit', :as => :object_attachments_edit
+  patch 'attachments/:object_type/:object_id', :to => 'attachments#update', :as => :object_attachments
 
   resources :groups do
+    resources :memberships, :controller => 'principal_memberships'
     member do
       get 'autocomplete_for_user'
     end
   end
 
-  match 'groups/:id/users', :controller => 'groups', :action => 'add_users', :id => /\d+/, :via => :post, :as => 'group_users'
-  match 'groups/:id/users/:user_id', :controller => 'groups', :action => 'remove_user', :id => /\d+/, :via => :delete, :as => 'group_user'
-  match 'groups/destroy_membership/:id', :controller => 'groups', :action => 'destroy_membership', :id => /\d+/, :via => :post
-  match 'groups/edit_membership/:id', :controller => 'groups', :action => 'edit_membership', :id => /\d+/, :via => :post
+  get 'groups/:id/users/new', :to => 'groups#new_users', :id => /\d+/, :as => 'new_group_users'
+  post 'groups/:id/users', :to => 'groups#add_users', :id => /\d+/, :as => 'group_users'
+  delete 'groups/:id/users/:user_id', :to => 'groups#remove_user', :id => /\d+/, :as => 'group_user'
 
   resources :trackers, :except => :show do
     collection do
@@ -308,7 +319,7 @@ RedmineApp::Application.routes.draw do
   match 'admin/projects', :controller => 'admin', :action => 'projects', :via => :get
   match 'admin/plugins', :controller => 'admin', :action => 'plugins', :via => :get
   match 'admin/info', :controller => 'admin', :action => 'info', :via => :get
-  match 'admin/test_email', :controller => 'admin', :action => 'test_email', :via => :get
+  match 'admin/test_email', :controller => 'admin', :action => 'test_email', :via => :post
   match 'admin/default_configuration', :controller => 'admin', :action => 'default_configuration', :via => :post
 
   resources :auth_sources do

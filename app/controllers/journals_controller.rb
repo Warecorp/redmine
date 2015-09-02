@@ -34,7 +34,6 @@ class JournalsController < ApplicationController
     retrieve_query
     sort_init 'id', 'desc'
     sort_update(@query.sortable_columns)
-
     if @query.valid?
       @journals = @query.journals(:order => "#{Journal.table_name}.created_on DESC",
                                   :limit => 25)
@@ -50,9 +49,17 @@ class JournalsController < ApplicationController
     if params[:detail_id].present?
       @detail = @journal.details.find_by_id(params[:detail_id])
     else
-      @detail = @journal.details.detect {|d| d.prop_key == 'description'}
+      @detail = @journal.details.detect {|d| d.property == 'attr' && d.prop_key == 'description'}
     end
-    (render_404; return false) unless @issue && @detail
+    unless @issue && @detail
+      render_404
+      return false
+    end
+    if @detail.property == 'cf'
+      unless @detail.custom_field && @detail.custom_field.visible_by?(@issue.project, User.current)
+        raise ::Unauthorized
+      end
+    end
     @diff = Redmine::Helpers::Diff.new(@detail.value, @detail.old_value)
   end
 
@@ -85,10 +92,7 @@ class JournalsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.html {
-          # TODO: implement non-JS journal update
-          render :nothing => true
-        }
+        # TODO: implement non-JS journal update
         format.js
       end
     end

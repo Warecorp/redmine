@@ -20,6 +20,7 @@ require File.expand_path('../../test_helper', __FILE__)
 class WikiContentTest < ActiveSupport::TestCase
   fixtures :projects, :enabled_modules,
            :users, :members, :member_roles, :roles,
+           :email_addresses,
            :wikis, :wiki_pages, :wiki_contents, :wiki_content_versions
 
   def setup
@@ -95,7 +96,7 @@ class WikiContentTest < ActiveSupport::TestCase
     content = @page.content
     content.text = "My new content"
 
-    with_settings :notified_events => %w(wiki_content_updated) do
+    with_settings :notified_events => %w(wiki_content_updated), :default_language => 'en' do
       assert content.save
     end
 

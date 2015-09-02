@@ -36,7 +36,8 @@ class ProjectTest < ActiveSupport::TestCase
            :boards, :messages,
            :repositories,
            :news, :comments,
-           :documents
+           :documents,
+           :workflows
 
   def setup
     @ecookbook = Project.find(1)
@@ -316,7 +317,7 @@ class ProjectTest < ActiveSupport::TestCase
 
     parent.reload
     assert_equal 4, parent.children.size
-    assert_equal parent.children.all.sort_by(&:name), parent.children.all
+    assert_equal parent.children.sort_by(&:name), parent.children.to_a
   end
 
   def test_set_parent_should_update_issue_fixed_version_associations_when_a_fixed_version_is_moved_out_of_the_hierarchy
@@ -480,7 +481,8 @@ class ProjectTest < ActiveSupport::TestCase
     project = Project.generate!
     parent_version_1 = Version.generate!(:project => project)
     parent_version_2 = Version.generate!(:project => project)
-    assert_same_elements [parent_version_1, parent_version_2], project.rolled_up_versions
+    assert_equal [parent_version_1, parent_version_2].sort,
+      project.rolled_up_versions.sort
   end
 
   test "#rolled_up_versions should include versions for a subproject" do
@@ -490,11 +492,8 @@ class ProjectTest < ActiveSupport::TestCase
     subproject = Project.generate_with_parent!(project)
     subproject_version = Version.generate!(:project => subproject)
 
-    assert_same_elements [
-                          parent_version_1,
-                          parent_version_2,
-                          subproject_version
-                         ], project.rolled_up_versions
+    assert_equal [parent_version_1, parent_version_2, subproject_version].sort,
+      project.rolled_up_versions.sort
   end
 
   test "#rolled_up_versions should include versions for a sub-subproject" do
@@ -506,11 +505,8 @@ class ProjectTest < ActiveSupport::TestCase
     sub_subproject_version = Version.generate!(:project => sub_subproject)
     project.reload
 
-    assert_same_elements [
-                          parent_version_1,
-                          parent_version_2,
-                          sub_subproject_version
-                         ], project.rolled_up_versions
+    assert_equal [parent_version_1, parent_version_2, sub_subproject_version].sort,
+      project.rolled_up_versions.sort
   end
 
   test "#rolled_up_versions should only check active projects" do
@@ -523,7 +519,8 @@ class ProjectTest < ActiveSupport::TestCase
     project.reload
 
     assert !subproject.active?
-    assert_same_elements [parent_version_1, parent_version_2], project.rolled_up_versions
+    assert_equal [parent_version_1, parent_version_2].sort,
+      project.rolled_up_versions.sort
   end
 
   def test_shared_versions_none_sharing
@@ -650,6 +647,12 @@ class ProjectTest < ActiveSupport::TestCase
     end
   end
 
+  def test_enabled_modules_names_with_nil_should_clear_modules
+    p = Project.find(1)
+    p.enabled_module_names = nil
+    assert_equal [], p.enabled_modules
+  end
+
   test "enabled_modules should define module by names and preserve ids" do
     @project = Project.find(1)
     # Remove one module
@@ -729,7 +732,7 @@ class ProjectTest < ActiveSupport::TestCase
 
   def test_activities_should_use_the_system_activities
     project = Project.find(1)
-    assert_equal project.activities, TimeEntryActivity.where(:active => true).all
+    assert_equal project.activities.to_a, TimeEntryActivity.where(:active => true).to_a
     assert_kind_of ActiveRecord::Relation, project.activities
   end
 
@@ -943,5 +946,30 @@ class ProjectTest < ActiveSupport::TestCase
     assert !project.notified_users.include?(only_my_events_user), "should not include users with the 'only_my_events' notification option"
     assert !project.notified_users.include?(only_assigned_user), "should not include users with the 'only_assigned' notification option"
     assert !project.notified_users.include?(only_owned_user), "should not include users with the 'only_owner' notification option"
+  end
+
+  def test_override_roles_without_builtin_group_memberships
+    project = Project.generate!
+    assert_equal [Role.anonymous], project.override_roles(Role.anonymous)
+    assert_equal [Role.non_member], project.override_roles(Role.non_member)
+  end
+
+  def test_css_classes
+    p = Project.new
+    assert_kind_of String, p.css_classes
+    assert_not_include 'archived', p.css_classes.split
+    assert_not_include 'closed', p.css_classes.split
+  end
+
+  def test_css_classes_for_archived_project
+    p = Project.new
+    p.status = Project::STATUS_ARCHIVED
+    assert_include 'archived', p.css_classes.split
+  end
+
+  def test_css_classes_for_closed_project
+    p = Project.new
+    p.status = Project::STATUS_CLOSED
+    assert_include 'closed', p.css_classes.split
   end
 end

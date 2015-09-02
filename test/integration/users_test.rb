@@ -17,8 +17,8 @@
 
 require File.expand_path('../../test_helper', __FILE__)
 
-class UsersTest < ActionController::IntegrationTest
-  fixtures :users
+class UsersTest < Redmine::IntegrationTest
+  fixtures :users, :email_addresses
 
   def test_destroy_should_not_accept_get_requests
     assert_no_difference 'User.count' do

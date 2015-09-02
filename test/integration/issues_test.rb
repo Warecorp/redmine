@@ -17,9 +17,9 @@
 
 require File.expand_path('../../test_helper', __FILE__)
 
-class IssuesTest < ActionController::IntegrationTest
+class IssuesTest < Redmine::IntegrationTest
   fixtures :projects,
-           :users,
+           :users, :email_addresses,
            :roles,
            :members,
            :member_roles,
@@ -36,11 +36,11 @@ class IssuesTest < ActionController::IntegrationTest
   # create an issue
   def test_add_issue
     log_user('jsmith', 'jsmith')
-    get 'projects/1/issues/new', :tracker_id => '1'
+    get '/projects/1/issues/new', :tracker_id => '1'
     assert_response :success
     assert_template 'issues/new'
 
-    post 'projects/1/issues', :tracker_id => "1",
+    post '/projects/1/issues', :tracker_id => "1",
                                  :issue => { :start_date => "2006-12-26",
                                              :priority_id => "4",
                                              :subject => "new test issue",
@@ -69,7 +69,7 @@ class IssuesTest < ActionController::IntegrationTest
     Role.anonymous.remove_permission! :add_issues
 
     assert_no_difference 'Issue.count' do
-      post 'projects/1/issues', :tracker_id => "1", :issue => {:subject => "new test issue"}
+      post '/projects/1/issues', :tracker_id => "1", :issue => {:subject => "new test issue"}
     end
     assert_response 302
   end
@@ -79,7 +79,7 @@ class IssuesTest < ActionController::IntegrationTest
     Member.create!(:project_id => 1, :principal => Group.anonymous, :role_ids => [3])
 
     assert_difference 'Issue.count' do
-      post 'projects/1/issues', :tracker_id => "1", :issue => {:subject => "new test issue"}
+      post '/projects/1/issues', :tracker_id => "1", :issue => {:subject => "new test issue"}
     end
     assert_response 302
     issue = Issue.order("id DESC").first
@@ -91,7 +91,7 @@ class IssuesTest < ActionController::IntegrationTest
     log_user('jsmith', 'jsmith')
     set_tmp_attachments_directory
 
-    put 'issues/1',
+    put '/issues/1',
          :notes => 'Some notes',
          :attachments => {'1' => {'file' => uploaded_test_file('testfile.txt', 'text/plain'), 'description' => 'This is an attachment'}}
     assert_redirected_to "/issues/1"
@@ -115,9 +115,7 @@ class IssuesTest < ActionController::IntegrationTest
     get '/projects/ecookbook/issues'
 
     %w(Atom PDF CSV).each do |format|
-      assert_tag :a, :content => format,
-                     :attributes => { :href => "/projects/ecookbook/issues.#{format.downcase}",
-                                      :rel => 'nofollow' }
+      assert_select 'a[rel=nofollow][href=?]', "/projects/ecookbook/issues.#{format.downcase}", :text => format
     end
   end
 
@@ -125,47 +123,39 @@ class IssuesTest < ActionController::IntegrationTest
     get '/issues', :project_id => 'ecookbook'
 
     %w(Atom PDF CSV).each do |format|
-      assert_tag :a, :content => format,
-                     :attributes => { :href => "/projects/ecookbook/issues.#{format.downcase}",
-                                      :rel => 'nofollow' }
+      assert_select 'a[rel=nofollow][href=?]', "/projects/ecookbook/issues.#{format.downcase}", :text => format
     end
   end
 
   def test_pagination_links_on_index
-    Setting.per_page_options = '2'
-    get '/projects/ecookbook/issues'
+    with_settings :per_page_options => '2' do
+      get '/projects/ecookbook/issues'
 
-    assert_tag :a, :content => '2',
-                   :attributes => { :href => '/projects/ecookbook/issues?page=2' }
-
+      assert_select 'a[href=?]', '/projects/ecookbook/issues?page=2', :text => '2'
+    end
   end
 
   def test_pagination_links_on_index_without_project_id_in_url
-    Setting.per_page_options = '2'
-    get '/issues', :project_id => 'ecookbook'
-
-    assert_tag :a, :content => '2',
-                   :attributes => { :href => '/projects/ecookbook/issues?page=2' }
-
+    with_settings :per_page_options => '2' do
+      get '/issues', :project_id => 'ecookbook'
+  
+      assert_select 'a[href=?]', '/projects/ecookbook/issues?page=2', :text => '2'
+    end
   end
 
   def test_issue_with_user_custom_field
     @field = IssueCustomField.create!(:name => 'Tester', :field_format => 'user', :is_for_all => true, :trackers => Tracker.all)
     Role.anonymous.add_permission! :add_issues, :edit_issues
-    users = Project.find(1).users
+    users = Project.find(1).users.uniq.sort
     tester = users.first
 
     # Issue form
     get '/projects/ecookbook/issues/new'
     assert_response :success
-    assert_tag :select,
-      :attributes => {:name => "issue[custom_field_values][#{@field.id}]"},
-      :children => {:count => (users.size + 1)}, # +1 for blank value
-      :child => {
-        :tag => 'option',
-        :attributes => {:value => tester.id.to_s},
-        :content => tester.name
-      }
+    assert_select 'select[name=?]', "issue[custom_field_values][#{@field.id}]" do
+      assert_select 'option', users.size + 1 # +1 for blank value
+      assert_select 'option[value=?]', tester.id.to_s, :text => tester.name
+    end
 
     # Create issue
     assert_difference 'Issue.count' do
@@ -182,42 +172,27 @@ class IssuesTest < ActionController::IntegrationTest
 
     # Issue view
     follow_redirect!
-    assert_tag :th,
-      :content => /Tester/,
-      :sibling => {
-        :tag => 'td',
-        :content => tester.name
-      }
-    assert_tag :select,
-      :attributes => {:name => "issue[custom_field_values][#{@field.id}]"},
-      :children => {:count => (users.size + 1)}, # +1 for blank value
-      :child => {
-        :tag => 'option',
-        :attributes => {:value => tester.id.to_s, :selected => 'selected'},
-        :content => tester.name
-      }
-
-    # Update issue
-    new_tester = users[1]
-    assert_difference 'Journal.count' do
-      put "/issues/#{issue.id}",
-        :notes => 'Updating custom field',
-        :issue => {
-          :custom_field_values => {@field.id.to_s => new_tester.id.to_s}
-        }
+    assert_select 'th:contains("Tester:") + td', :text => tester.name
+    assert_select 'select[name=?]', "issue[custom_field_values][#{@field.id}]" do
+      assert_select 'option', users.size + 1 # +1 for blank value
+      assert_select 'option[value=?][selected=selected]', tester.id.to_s, :text => tester.name
     end
-    assert_response 302
 
-    # Issue view
-    follow_redirect!
-    assert_tag :content => 'Tester',
-      :ancestor => {:tag => 'ul', :attributes => {:class => /details/}},
-      :sibling => {
-        :content => tester.name,
-        :sibling => {
-          :content => new_tester.name
-        }
-      }
+    new_tester = users[1]
+    with_settings :default_language => 'en' do
+      # Update issue
+      assert_difference 'Journal.count' do
+        put "/issues/#{issue.id}",
+            :notes => 'Updating custom field',
+            :issue => {
+                :custom_field_values => {@field.id.to_s => new_tester.id.to_s}
+              }
+        assert_redirected_to "/issues/#{issue.id}"
+      end
+      # Issue view
+      follow_redirect!
+      assert_select 'ul.details li', :text => "Tester changed from #{tester} to #{new_tester}"
+    end
   end
 
   def test_update_using_invalid_http_verbs

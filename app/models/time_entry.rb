@@ -22,7 +22,7 @@ class TimeEntry < ActiveRecord::Base
   belongs_to :project
   belongs_to :issue
   belongs_to :user
-  belongs_to :activity, :class_name => 'TimeEntryActivity', :foreign_key => 'activity_id'
+  belongs_to :activity, :class_name => 'TimeEntryActivity'
 
   attr_protected :user_id, :tyear, :tmonth, :tweek
 
@@ -35,7 +35,7 @@ class TimeEntry < ActiveRecord::Base
 
   acts_as_activity_provider :timestamp => "#{table_name}.created_on",
                             :author_key => :user_id,
-                            :find_options => {:include => :project}
+                            :scope => joins(:project).preload(:project)
 
   validates_presence_of :user_id, :activity_id, :project_id, :hours, :spent_on
   validates_numericality_of :hours, :allow_nil => true, :message => :invalid
@@ -45,24 +45,12 @@ class TimeEntry < ActiveRecord::Base
   validate :validate_time_entry
 
   scope :visible, lambda {|*args|
-    includes(:project).where(Project.allowed_to_condition(args.shift || User.current, :view_time_entries, *args))
+    joins(:project).
+    where(Project.allowed_to_condition(args.shift || User.current, :view_time_entries, *args))
   }
   scope :on_issue, lambda {|issue|
-    includes(:issue).where("#{Issue.table_name}.root_id = #{issue.root_id} AND #{Issue.table_name}.lft >= #{issue.lft} AND #{Issue.table_name}.rgt <= #{issue.rgt}")
-  }
-  scope :on_project, lambda {|project, include_subprojects|
-    includes(:project).where(project.project_condition(include_subprojects))
-  }
-  scope :spent_between, lambda {|from, to|
-    if from && to
-     where("#{TimeEntry.table_name}.spent_on BETWEEN ? AND ?", from, to)
-    elsif from
-     where("#{TimeEntry.table_name}.spent_on >= ?", from)
-    elsif to
-     where("#{TimeEntry.table_name}.spent_on <= ?", to)
-    else
-     where(nil)
-    end
+    joins(:issue).
+    where("#{Issue.table_name}.root_id = #{issue.root_id} AND #{Issue.table_name}.lft >= #{issue.lft} AND #{Issue.table_name}.rgt <= #{issue.rgt}")
   }
 
   safe_attributes 'hours', 'comments', 'project_id', 'issue_id', 'activity_id', 'spent_on', 'custom_field_values', 'custom_fields'
@@ -80,9 +68,14 @@ class TimeEntry < ActiveRecord::Base
   def safe_attributes=(attrs, user=User.current)
     if attrs
       attrs = super(attrs)
-      if issue_id_changed? && attrs[:project_id].blank? && issue && issue.project_id != project_id
+      if issue_id_changed? && issue
         if user.allowed_to?(:log_time, issue.project)
-          self.project_id = issue.project_id
+          if attrs[:project_id].blank? && issue.project_id != project_id
+            self.project_id = issue.project_id
+          end
+          @invalid_issue_id = nil
+        else
+          @invalid_issue_id = issue_id
         end
       end
     end
@@ -96,7 +89,7 @@ class TimeEntry < ActiveRecord::Base
   def validate_time_entry
     errors.add :hours, :invalid if hours && (hours < 0 || hours >= 1000)
     errors.add :project_id, :invalid if project.nil?
-    errors.add :issue_id, :invalid if (issue_id && !issue) || (issue && project!=issue.project)
+    errors.add :issue_id, :invalid if (issue_id && !issue) || (issue && project!=issue.project) || @invalid_issue_id
   end
 
   def hours=(h)
@@ -116,9 +109,6 @@ class TimeEntry < ActiveRecord::Base
   # these attributes make time aggregations easier
   def spent_on=(date)
     super
-    if spent_on.is_a?(Time)
-      self.spent_on = spent_on.to_date
-    end
     self.tyear = spent_on ? spent_on.year : nil
     self.tmonth = spent_on ? spent_on.month : nil
     self.tweek = spent_on ? Date.civil(spent_on.year, spent_on.month, spent_on.day).cweek : nil

@@ -118,9 +118,8 @@ YAML
     Setting.commit_update_keywords = {}
     assert_equal 1, Setting.where(:name => 'commit_update_keywords').update_all(:value => yaml)
     Setting.clear_cache
-    if "".respond_to?(:force_encoding)
-      assert_equal 'UTF-8', Setting.commit_update_keywords.first['keywords'].encoding.name
-    end
+
+    assert_equal 'UTF-8', Setting.commit_update_keywords.first['keywords'].encoding.name
   ensure
     Setting.where(:name => 'commit_update_keywords').delete_all
     Setting.clear_cache

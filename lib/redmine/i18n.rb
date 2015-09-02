@@ -56,7 +56,6 @@ module Redmine
       return nil unless date
       options = {}
       options[:format] = Setting.date_format unless Setting.date_format.blank?
-      options[:locale] = User.current.language unless User.current.language.blank?
       ::I18n.l(date.to_date, options)
     end
 
@@ -64,7 +63,6 @@ module Redmine
       return nil unless time
       options = {}
       options[:format] = (Setting.time_format.blank? ? :time : Setting.time_format)
-      options[:locale] = User.current.language unless User.current.language.blank?
       time = time.to_time if time.is_a?(String)
       zone = User.current.time_zone
       local = zone ? time.in_time_zone(zone) : (time.utc? ? time.localtime : time)
@@ -99,17 +97,11 @@ module Redmine
           map {|lang| [ll(lang.to_s, :general_lang_name), lang.to_s]}.
           sort {|x,y| x.first <=> y.first }
       else
-        ActionController::Base.cache_store.fetch "i18n/languages_options" do
+        ActionController::Base.cache_store.fetch "i18n/languages_options/#{Redmine::VERSION}" do
           languages_options :cache => false
         end
       end
-      options.map do |name, lang|
-        n = name
-        l = lang
-        n.force_encoding("UTF-8") if n.respond_to?(:force_encoding)
-        l.force_encoding("UTF-8") if l.respond_to?(:force_encoding)
-        [n, l]
-      end
+      options.map {|name, lang| [name.force_encoding("UTF-8"), lang.force_encoding("UTF-8")]}
     end
 
     def find_language(lang)

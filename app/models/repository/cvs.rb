@@ -57,9 +57,9 @@ class Repository::Cvs < Repository
     if entries
       entries.each() do |entry|
         if ( ! entry.lastrev.nil? ) && ( ! entry.lastrev.revision.nil? )
-          change = filechanges.find_by_revision_and_path(
-                     entry.lastrev.revision,
-                     scm.with_leading_slash(entry.path) )
+          change = filechanges.where(
+                       :revision => entry.lastrev.revision,
+                       :path => scm.with_leading_slash(entry.path)).first
           if change
             entry.lastrev.identifier = change.changeset.revision
             entry.lastrev.revision   = change.changeset.revision
@@ -187,9 +187,17 @@ class Repository::Cvs < Repository
         where("repository_id = ? AND revision LIKE 'tmp%'", id).
         each do |changeset|
           changeset.update_attribute :revision, next_revision_number
-      end
+        end
     end # transaction
     @current_revision_number = nil
+  end
+
+  protected
+
+  # Overrides Repository#validate_repository_path to validate
+  # against root_url attribute.
+  def validate_repository_path(attribute=:root_url)
+    super(attribute)
   end
 
   private
@@ -199,7 +207,7 @@ class Repository::Cvs < Repository
     # Need to retrieve existing revision numbers to sort them as integers
     sql = "SELECT revision FROM #{Changeset.table_name} "
     sql << "WHERE repository_id = #{id} AND revision NOT LIKE 'tmp%'"
-    @current_revision_number ||= (connection.select_values(sql).collect(&:to_i).max || 0)
+    @current_revision_number ||= (self.class.connection.select_values(sql).collect(&:to_i).max || 0)
     @current_revision_number += 1
   end
 end

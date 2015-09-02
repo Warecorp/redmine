@@ -17,7 +17,7 @@
 
 require File.expand_path('../../test_helper', __FILE__)
 
-class AdminTest < ActionController::IntegrationTest
+class AdminTest < Redmine::IntegrationTest
   fixtures :projects, :trackers, :issue_statuses, :issues,
            :enumerations, :users, :issue_categories,
            :projects_trackers,
@@ -45,7 +45,7 @@ class AdminTest < ActionController::IntegrationTest
     assert_kind_of User, logged_user
     assert_equal "Paul", logged_user.firstname
 
-    put "users/#{user.id}", :id => user.id, :user => { :status => User::STATUS_LOCKED }
+    put "/users/#{user.id}", :id => user.id, :user => { :status => User::STATUS_LOCKED }
     assert_redirected_to "/users/#{ user.id }/edit"
     locked_user = User.try_to_login("psmith", "psmith09")
     assert_equal nil, locked_user

@@ -32,9 +32,9 @@ class AdminController < ApplicationController
   def projects
     @status = params[:status] || 1
 
-    scope = Project.status(@status).order('lft')
+    scope = Project.status(@status).sorted
     scope = scope.like(params[:name]) if params[:name].present?
-    @projects = scope.all
+    @projects = scope.to_a
 
     render :action => "projects", :layout => false if request.xhr?
   end

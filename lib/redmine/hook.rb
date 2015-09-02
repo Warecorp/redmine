@@ -96,23 +96,32 @@ module Redmine
       # Default to creating links using only the path.  Subclasses can
       # change this default as needed
       def self.default_url_options
-        {:only_path => true }
+        {:only_path => true, :script_name => Redmine::Utils.relative_url_root}
       end
 
-      # Helper method to directly render a partial using the context:
+      # Helper method to directly render using the context,
+      # render_options must be valid #render options.
       #
       #   class MyHook < Redmine::Hook::ViewListener
       #     render_on :view_issues_show_details_bottom, :partial => "show_more_data"
       #   end
       #
-      def self.render_on(hook, options={})
+      #   class MultipleHook < Redmine::Hook::ViewListener
+      #     render_on :view_issues_show_details_bottom,
+      #       {:partial => "show_more_data"},
+      #       {:partial => "show_even_more_data"}
+      #   end
+      #
+      def self.render_on(hook, *render_options)
         define_method hook do |context|
-          if context[:hook_caller].respond_to?(:render)
-            context[:hook_caller].send(:render, {:locals => context}.merge(options))
-          elsif context[:controller].is_a?(ActionController::Base)
-            context[:controller].send(:render_to_string, {:locals => context}.merge(options))
-          else
-            raise "Cannot render #{self.name} hook from #{context[:hook_caller].class.name}"
+          render_options.map do |options|
+            if context[:hook_caller].respond_to?(:render)
+              context[:hook_caller].send(:render, {:locals => context}.merge(options))
+            elsif context[:controller].is_a?(ActionController::Base)
+              context[:controller].send(:render_to_string, {:locals => context}.merge(options))
+            else
+              raise "Cannot render #{self.name} hook from #{context[:hook_caller].class.name}"
+            end
           end
         end
       end

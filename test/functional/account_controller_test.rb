@@ -18,7 +18,7 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class AccountControllerTest < ActionController::TestCase
-  fixtures :users, :roles
+  fixtures :users, :email_addresses, :roles
 
   def setup
     User.current = nil
@@ -72,8 +72,8 @@ class AccountControllerTest < ActionController::TestCase
   end
 
   def test_login_with_suburi_should_redirect_to_back_url_param
-    @relative_url_root = ApplicationController.relative_url_root
-    ApplicationController.relative_url_root = '/redmine'
+    @relative_url_root = Redmine::Utils.relative_url_root
+    Redmine::Utils.relative_url_root = '/redmine'
 
     back_urls = [
       'http://test.host/redmine/issues/show/1',
@@ -84,7 +84,7 @@ class AccountControllerTest < ActionController::TestCase
       assert_redirected_to back_url
     end
   ensure
-    ApplicationController.relative_url_root = @relative_url_root
+    Redmine::Utils.relative_url_root = @relative_url_root
   end
 
   def test_login_should_not_redirect_to_another_host
@@ -99,8 +99,8 @@ class AccountControllerTest < ActionController::TestCase
   end
 
   def test_login_with_suburi_should_not_redirect_to_another_suburi
-    @relative_url_root = ApplicationController.relative_url_root
-    ApplicationController.relative_url_root = '/redmine'
+    @relative_url_root = Redmine::Utils.relative_url_root
+    Redmine::Utils.relative_url_root = '/redmine'
 
     back_urls = [
       'http://test.host/',
@@ -115,7 +115,7 @@ class AccountControllerTest < ActionController::TestCase
       assert_redirected_to '/my/page'
     end
   ensure
-    ApplicationController.relative_url_root = @relative_url_root
+    Redmine::Utils.relative_url_root = @relative_url_root
   end
 
   def test_login_with_wrong_password
@@ -166,7 +166,7 @@ class AccountControllerTest < ActionController::TestCase
 
     post :login, :username => 'jsmith', :password => 'jsmith'
     assert_response 500
-    assert_error_tag :content => /Something wrong/
+    assert_select_error /Something wrong/
   end
 
   def test_login_should_reset_session
@@ -302,6 +302,20 @@ class AccountControllerTest < ActionController::TestCase
     assert_select_email do
       assert_select "a[href=?]", "http://mydomain.foo/account/lost_password?token=#{token.value}"
     end
+  end
+
+  def test_lost_password_using_additional_email_address_should_send_email_to_the_address
+    EmailAddress.create!(:user_id => 2, :address => 'anotherAddress@foo.bar')
+    Token.delete_all
+
+    assert_difference 'ActionMailer::Base.deliveries.size' do
+      assert_difference 'Token.count' do
+        post :lost_password, :mail => 'ANOTHERaddress@foo.bar'
+        assert_redirected_to '/login'
+      end
+    end
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal ['anotherAddress@foo.bar'], mail.bcc
   end
 
   def test_lost_password_for_unknown_user_should_fail

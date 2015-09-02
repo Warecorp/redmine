@@ -17,7 +17,7 @@
 
 require File.expand_path('../../test_helper', __FILE__)
 
-class AttachmentsTest < ActionController::IntegrationTest
+class AttachmentsTest < Redmine::IntegrationTest
   fixtures :projects, :enabled_modules,
            :users, :roles, :members, :member_roles,
            :trackers, :projects_trackers,
@@ -29,8 +29,18 @@ class AttachmentsTest < ActionController::IntegrationTest
       post "/uploads.js?attachment_id=1&filename=foo.txt", "File content", {"CONTENT_TYPE" => 'application/octet-stream'}
       assert_response :success
     end
-    attachment = Attachment.order('id DESC').first
+    attachment = Attachment.order(:id => :desc).first
     assert_equal 'text/plain', attachment.content_type
+  end
+
+  def test_upload_should_accept_content_type_param
+    log_user('jsmith', 'jsmith')
+    assert_difference 'Attachment.count' do
+      post "/uploads.js?attachment_id=1&filename=foo&content_type=image/jpeg", "File content", {"CONTENT_TYPE" => 'application/octet-stream'}
+      assert_response :success
+    end
+    attachment = Attachment.order(:id => :desc).first
+    assert_equal 'image/jpeg', attachment.content_type
   end
 
   def test_upload_as_js_and_attach_to_an_issue

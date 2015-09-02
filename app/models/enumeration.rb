@@ -18,13 +18,13 @@
 class Enumeration < ActiveRecord::Base
   include Redmine::SubclassFactory
 
-  default_scope :order => "#{Enumeration.table_name}.position ASC"
+  default_scope lambda {order(:position)}
 
   belongs_to :project
 
   acts_as_list :scope => 'type = \'#{type}\''
   acts_as_customizable
-  acts_as_tree :order => "#{Enumeration.table_name}.position ASC"
+  acts_as_tree
 
   before_destroy :check_integrity
   before_save    :check_default
@@ -36,7 +36,7 @@ class Enumeration < ActiveRecord::Base
   validates_length_of :name, :maximum => 30
 
   scope :shared, lambda { where(:project_id => nil) }
-  scope :sorted, lambda { order("#{table_name}.position ASC") }
+  scope :sorted, lambda { order(:position) }
   scope :active, lambda { where(:active => true) }
   scope :system, lambda { where(:project_id => nil) }
   scope :named, lambda {|arg| where("LOWER(#{table_name}.name) = LOWER(?)", arg.to_s.strip)}
@@ -103,12 +103,6 @@ class Enumeration < ActiveRecord::Base
     subclasses
   end
 
-  # TODO: remove in Redmine 3.0
-  def self.overridding_change?(new, previous)
-    ActiveSupport::Deprecation.warn "Enumeration#overridding_change? is deprecated and will be removed in Redmine 3.0. Please use #overriding_change?."
-    overriding_change?(new, previous)
-  end
-
   # Does the +new+ Hash override the previous Enumeration?
   def self.overriding_change?(new, previous)
     if (same_active_state?(new['active'], previous.active)) && same_custom_values?(new,previous)
@@ -137,7 +131,7 @@ class Enumeration < ActiveRecord::Base
 
 private
   def check_integrity
-    raise "Can't delete enumeration" if self.in_use?
+    raise "Cannot delete enumeration" if self.in_use?
   end
 
 end
