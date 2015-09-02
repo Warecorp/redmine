@@ -9,6 +9,7 @@ set :repo_url, 'git@github.com:Warecorp/redmine.git'
 set :branch, fetch(:revision) || ENV['branch'] || :develop
 set :deploy_to, deploy_dir
 set :pty, true
+set :bundle_without, 'development'
 
 namespace :deploy do
 
