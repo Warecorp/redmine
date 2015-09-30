@@ -102,7 +102,7 @@ GEM
     multi_json (1.11.2)
     multi_xml (0.5.5)
     multipart-post (2.0.0)
-    mysql (2.8.1)
+    mysql2 (0.3.20)
     net-ldap (0.3.1)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
@@ -222,7 +222,7 @@ DEPENDENCIES
   mime-types
   minitest
   mocha
-  mysql (~> 2.8.1)
+  mysql2 (~> 0.3.11)
   net-ldap (~> 0.3.1)
   oauth2
   protected_attributes
