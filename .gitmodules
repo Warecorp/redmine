@@ -28,3 +28,6 @@
 [submodule "plugins/redmine_slack"]
 	path = plugins/redmine_slack
 	url = https://github.com/Warecorp/redmine-slack
+[submodule "plugins/redmine_download_history"]
+	path = plugins/redmine_download_history
+	url = https://github.com/Warecorp/redmine_download_history
