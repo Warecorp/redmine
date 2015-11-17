@@ -31,3 +31,9 @@
 [submodule "plugins/redmine_download_history"]
 	path = plugins/redmine_download_history
 	url = https://github.com/Warecorp/redmine_download_history
+[submodule "plugins/redmine_backlogs"]
+	path = plugins/redmine_backlogs
+	url = https://github.com/Warecorp/redmine_backlogs
+[submodule "plugins/redmine_agile"]
+	path = plugins/redmine_agile
+	url = https://github.com/Warecorp/redmine_agile
