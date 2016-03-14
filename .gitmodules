@@ -37,3 +37,6 @@
 [submodule "plugins/redmine_agile"]
 	path = plugins/redmine_agile
 	url = https://github.com/Warecorp/redmine_agile
+[submodule "plugins/redmine_wage"]
+	path = plugins/redmine_wage
+	url = https://github.com/IluhaAndr/redmine_wage
