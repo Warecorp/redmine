@@ -1,0 +1,46 @@
+version: "2.1"
+services:
+
+  # nginx:
+  #   image: registry.warecorp.com/nginx/upstream:3
+  #   ports:
+  #     - "8001:80"
+  #   environment:
+  #     APP_NAME: goodcarts
+  #     APP_PORT: "8000"
+  #     NGINX_APP_ROOT: /var/www/html/public
+  #   volumes:
+  #     - ./codebase:/var/www/html
+
+
+  mysql:
+    image: mariadb:10.2
+    environment:
+      MYSQL_ROOT_PASSWORD: redmine
+      MYSQL_DATABASE: redmine
+      MYSQL_USER: redmine
+      MYSQL_PASSWORD: redmine
+    ports:
+      - '3306/tcp'
+    volumes:
+      - ./db_dump:/docker-entrypoint-initdb.d
+      - mysql:/var/lib/mysql
+
+  redmine:
+    image: hub.warecorp.com/redmine/coderun:8
+    command: "app:start"
+    depends_on:
+      - mysql
+    environment:
+      - RAILS_ENV=staging
+    links:
+      - mysql
+    ports:
+      - '9292:9292'
+    volumes:
+      - ./:/var/www/html
+      - ./files:/var/www/html/files
+
+volumes:
+  mysql:
+  # app:

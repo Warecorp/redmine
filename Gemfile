@@ -14,6 +14,7 @@ gem "mime-types"
 gem "protected_attributes"
 gem "actionpack-action_caching"
 gem "actionpack-xml_parser"
+gem "puma", :source => 'http://rubygems.org/'
 
 # Warecorp: gem for debugging
 gem 'pry'
