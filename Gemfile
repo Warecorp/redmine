@@ -5,7 +5,7 @@ if Gem::Version.new(Bundler::VERSION) < Gem::Version.new('1.5.0')
 end
 
 gem "rails", "4.2.3"
-gem "jquery-rails", "~> 3.1.3"
+gem "jquery-rails", "~> 3.1.4"
 gem "coderay", "~> 1.1.0"
 gem "fastercsv", "~> 1.5.0", :platforms => [:mri_18, :mingw_18, :jruby]
 gem "builder", ">= 3.0.4"
@@ -21,7 +21,7 @@ gem 'pry'
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: [:mingw, :x64_mingw, :mswin, :jruby]
-gem "rbpdf", "~> 1.18.6"
+gem "rbpdf", "~> 1.18.7"
 
 # Optional gem for LDAP authentication
 group :ldap do
@@ -42,7 +42,7 @@ platforms :mri, :mingw, :x64_mingw do
 
   # Optional Markdown support, not for JRuby
   group :markdown do
-    gem "redcarpet", "~> 3.1.2"
+    gem "redcarpet", "~> 3.3.2"
   end
 end
 
